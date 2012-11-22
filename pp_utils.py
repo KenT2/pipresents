@@ -5,6 +5,8 @@ import time
 """
 
 class StopWatch:
+    
+    global_enable=False
 
     def __init__(self):
         self.enable=False
@@ -16,24 +18,26 @@ class StopWatch:
         self.enable=False
     
     def start(self):
-        if self.enable: self.sstart=time.clock()
+        if StopWatch.global_enable and self.enable: self.sstart=time.clock()
 
     def split(self,text):
-        if self.enable:
+        if StopWatch.global_enable and self.enable:
             self.end=time.clock()
             print text + " " + str(self.end-self.sstart) + " secs"
             self.sstart=time.clock()
         
     def stop(self,text):
-        if self.enable:
+        if StopWatch.global_enable and self.enable:
             self.end=time.clock()
             print text + " " + str(self.end-self.sstart) + " secs"
 
 
 class Monitor:
+    global_enable=False
+    start_time= time.time()
+    
     def __init__(self):
         self.enable=False
-        self.sstart=time.time()
 
     def on(self):
         self.enable=True
@@ -41,5 +45,9 @@ class Monitor:
     def off(self):
         self.enable=False
 
-    def log(self,text):
-        if self.enable: print "%.2f" % (time.time()-self.sstart), " ", text
+    def err(self,caller,text):
+        print "%.2f" % (time.time()-Monitor.start_time), " ERROR: ",caller.__class__.__name__," ", text
+
+    def log(self,caller,text):
+        if Monitor.global_enable and self.enable:
+             print "%.2f" % (time.time()-Monitor.start_time), " ",caller.__class__.__name__," ", text

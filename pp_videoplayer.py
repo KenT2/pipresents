@@ -1,28 +1,24 @@
 """
 Issue Date 6 Nov 2012
+omx-audio, now expects local or hdmi not -o .....
+changed OMXPlayer to OMXDriver
+bug - pause/resume gets out of sync. kill the instance at end of track with self=None when ending
+      - must now create an instance of VideoPlayer for each play of a track
+changed pause to a toggle operation
+changed test harness into a class.
+added button_pressed, possibly key_pressed
+key pressed is now passed name of key rather than event.
+removed sending other controls to driver from key_pressed
+don't need an externalstop  function as the escape key does it.
+added a ready to play callback
+added track level configuration dictionary.
 
-To run the test harness edit track to something suitable then run  with  python pp_videoplayer.py
-
-s - play a track single shot
-p - pause
-r - resume
-q - quit
-
-l - loop the track continuously
-p,r as above
-n - skip to next track
-q - stops the track and breaks out of the loop
-
-still not 100% bomb proof, if n is pressed too fast p and r get reversed.
-Think I might need to create an instance of OMXPlayer for each track so state is guaranteed to get initilaised
-
-enjoy!
 """
 
 import time
 
 from pp_utils import Monitor
-from pp_omxplayer import OMXPlayer
+from pp_omxdriver import OMXDriver
 
 from Tkinter import *
 import Tkinter as tk
@@ -39,74 +35,103 @@ class VideoPlayer:
 # EXTERNAL COMMANDS
 # ***************************************
 
-    def __init__(self,canvas, cd ):
+    def __init__(self,canvas, cd,track_params ):
 
         self.mon=Monitor()
-        self.mon.off()
+        self.mon.on()
         
+        #instantiate arguments
         self.cd=cd       #configuration dictionary for the videoplayer
         self.canvas = canvas  #canvas onto which video should be played but isn't! Use as widget for alarm
-
+        self.track_params=track_params
+        
+        # get config from medialist if there.
+        if 'omx-audio' in self.track_params:
+            self.omx_audio= self.track_params['omx-audio']
+        else:
+            self.omx_audio= self.cd['omx-audio']
+            
         # could put instance generation in play, not sure which is better.
-        self.omx=OMXPlayer()
+        self.omx=OMXDriver()
         self._init_play_state_machine()
 
 
 
     def play(self, track, finished_callback=None,
+                     ready_callback=None,
                      starting_callback=None,
                      playing_callback=None,
                      ending_callback=None):
-        self.mon.log(">play track received")
-        if self.play_state==VideoPlayer._CLOSED:
-            self.finished_callback=finished_callback
-            self.starting_callback=starting_callback
-            self.playing_callback=playing_callback
-            self.ending_callback=ending_callback
+                         
+        #instantiate arguements
+        self.ready_callback=ready_callback
+        self.finished_callback=finished_callback
+        self.starting_callback=starting_callback
+        self.playing_callback=playing_callback
+        self.ending_callback=ending_callback
+ 
+        # and start playing the video.
+        if self.play_state == VideoPlayer._CLOSED:
+            self.mon.log(self,">play track received")
             self._start_play_state_machine(track)
             return True
         else:
-            self.mon.log("!< play track rejected")
+            self.mon.log(self,"!< play track rejected")
             return False
 
-    def stop(self):
+
+    def key_pressed(self,key_name):
+        if key_name=='':
+            return
+        elif key_name in ('p'):
+            self._pause()
+            return
+        elif key_name=='escape':
+            self._stop()
+            return
+
+
+
+    def button_pressed(self,button,edge):
+        if button =='pause':
+            self._pause()
+            return
+        elif button=='stop':
+            self._stop()
+            return
+
+    def kill(self):
+        if self.omx<>None:
+            self.omx.kill()
+
+
+# ***************************************
+# EXTERNAL COMMANDS
+# ***************************************
+
+    def _stop(self):
         # send signal to stop the track to the state machine
-        self.mon.log(">stop received")
+        self.mon.log(self,">stop received")
         self._stop_required_signal=True
 
 
-    def kill(self):
-        try:
-            self.omx
-        except AttributeError:
-            return
-        else:
-            self.omx.kill()
-            return
-
-    def pause(self):
-        if self.play_state==VideoPlayer._PLAYING:
+    #toggles pause
+    def _pause(self):
+        if self.play_state in (VideoPlayer._PLAYING,VideoPlayer._ENDING):
             self.omx.pause()
             return True
         else:
-            self.mon.log("!<pause rejected")
+            self.mon.log(self,"!<pause rejected")
             return False
         
-    def resume(self):
-        if self.play_state==VideoPlayer._PLAYING:
-            self.omx.resume()
-            return True
-        else:
-            self.mon.log("!<resume rejected")
-            return False
 
-
-    def control(self,char):
+    def _control(self,char):
         if self.play_state==VideoPlayer._PLAYING:
+            self.mon.log(self,"> send control ot omx: "+ char)
             self.omx.control(char)
             return True
         else:
-            self.mon.log("!<control rejected")
+            self.mon.log(self,"!<control rejected")
             return False
 
 
@@ -134,60 +159,64 @@ class VideoPlayer:
         self.play_state=VideoPlayer._STARTING
         
         #play the selected track
-        options=" "+ self.cd['omx-audio']+" "+self.cd['omx-other-options']+" "
+        options="-o "+ self.omx_audio+" "+self.cd['omx-other-options']+" "
         self.omx.play(track,options)
         self.canvas.after(50, self._play_state_machine)
  
 
     def _play_state_machine(self):
-        # self.mon.log ("******Iteration: " + str(self.iteration))
-        #self.iteration +=1
+
         
         if self.play_state == VideoPlayer._CLOSED:
-            self.mon.log("      State machine: " + self.play_state)
+            self.mon.log(self,"      State machine: " + self.play_state)
             return 
                 
         elif self.play_state == VideoPlayer._STARTING:
-            self.mon.log("      State machine: " + self.play_state)
+            self.mon.log(self,"      State machine: " + self.play_state)
             # if omxplayer is playing the track change to play state
             if self.omx.start_play_signal==True:
-                self.mon.log("            <start play signal received from omx")
+                self.mon.log(self,"            <start play signal received from omx")
                 self.omx.start_play_signal=False
+                # callback to the calling object to e.g remove egg timer.
+                if self.ready_callback<>None:
+                    self.ready_callback()
                 self.play_state=VideoPlayer._PLAYING
-                self.mon.log("      State machine: omx_playing started")
+                self.mon.log(self,"      State machine: omx_playing started")
             self._do_starting()
             self.canvas.after(50, self._play_state_machine)
 
         elif self.play_state == VideoPlayer._PLAYING:
-            # self.mon.log("      State machine: " + self.play_state)
+            # self.mon.log(self,"      State machine: " + self.play_state)
             # service any queued stop signals
             if self._stop_required_signal==True:
-                self.mon.log("      Service stop required signal")
+                self.mon.log(self,"      Service stop required signal")
                 self._stop_omx()
                 self._stop_required_signal=False
                 self.play_state = VideoPlayer._ENDING
             # omxplayer reports it is terminating so change to ending state
             if self.omx.end_play_signal:                    
-                self.mon.log("            <end play signal received")
-                self.mon.log("            <end detected at: " + str(self.omx.video_position))
+                self.mon.log(self,"            <end play signal received")
+                self.mon.log(self,"            <end detected at: " + str(self.omx.video_position))
                 self.play_state = VideoPlayer._ENDING
             self._do_playing()
             self.canvas.after(200, self._play_state_machine)
 
         elif self.play_state == VideoPlayer._ENDING:
-            self.mon.log("      State machine: " + self.play_state)
+            self.mon.log(self,"      State machine: " + self.play_state)
             self._do_ending()
             # if spawned process has closed can change to closed state
-            self.mon.log ("      State machine : is omx process running? -  "  + str(self.omx.is_running()))
+            self.mon.log (self,"      State machine : is omx process running? -  "  + str(self.omx.is_running()))
             if self.omx.is_running() ==False:
-                self.mon.log("            <omx process is dead")
+                self.mon.log(self,"            <omx process is dead")
                 self.play_state = VideoPlayer._CLOSED
                 if self.finished_callback<>None:
                     self.finished_callback("track has terminated")
-            self.canvas.after(200, self._play_state_machine)
+                self=None
+            else:
+                self.canvas.after(200, self._play_state_machine)
 
 
-    # do things in each state by calling the appropriate callback
+    # allow calling object do things in each state by calling the appropriate callback
  
     def _do_playing(self):
         self.video_position=self.omx.video_position
@@ -207,141 +236,174 @@ class VideoPlayer:
 
     def _stop_omx(self):
         # send signal to stop the track to the state machine
-        self.mon.log("         >stop omx received from state machine")
+        self.mon.log(self,"         >stop omx received from state machine")
         if self.play_state==VideoPlayer._PLAYING:
             self.omx.stop()
             return True
         else:
-            self.mon.log("!<stop rejected")
+            self.mon.log(self,"!<stop rejected")
             return False
 
 # *****************
 #Test harness follows
 # *****************
 
-def time_string(secs):
-    minu = int(secs/60)
-    sec = secs-(minu*60)
-    return str(minu)+":"+str(int(sec))
-
-#key presses
-
-def play_event(event):
-    vp.play(track,on_end,do_starting,do_playing,do_finishing)
+class Test:
     
-def pause_event(event):
-    vp.pause()
+    def __init__(self,cd,track,ct):
+        
+        self.track=track
+        self.cd=cd
+        self.ct = ct
+        self.break_from_loop=False
+    
+        # create and instance of a Tkinter top level window and refer to it as 'my_window'
+        my_window=Tk()
+        my_window.title("VideoPlayer Test Harness")
+    
+        # change the look of the window
+        my_window.configure(background='grey')
+        window_width=200
+        window_height=200
+    
+        canvas_height=window_height
+        canvas_width=window_width
+    
 
-def resume_event(event):
-    vp.resume()
+        #defne response to main window closing
+        my_window.protocol ("WM_DELETE_WINDOW", self.app_exit)
+        
+        my_window.geometry("%dx%d+200+20" %(window_width,window_height))
+    
+        my_window.bind("s", self.play_event)
+        my_window.bind("p", self.pause_event)
+        my_window.bind("q", self.stop_event)
+        my_window.bind("l", self.loop_event)
+        my_window.bind("n", self.next_event)
+        
+        #setup a canvas onto which will not be drawn the video!!
+        canvas = Canvas(my_window, bg='black')
+        canvas.config(height=canvas_height, width=canvas_width)
+        canvas.grid(row=1,columnspan=2)
+        
+        # make sure focus is set on canvas.
+        canvas.focus_set()
+    
+        self.canvas=canvas
+        
+        self.display_time = tk.StringVar()
+        
+    # define time/status display for selected track
+        time_label = Label(canvas, font=('Comic Sans', 11),
+                                fg = 'black', wraplength = 300,
+                                textvariable=self.display_time, bg="grey")
+        time_label.grid(row=0, column=0, columnspan=1)
+    
+        my_window.mainloop()
+    
+    def time_string(self,secs):
+        minu = int(secs/60)
+        sec = secs-(minu*60)
+        return str(minu)+":"+str(int(sec))
+    
+    #key presses
+    
+    def play_event(self,event):
+        self.vp=VideoPlayer(self.canvas,self.cd,self.ct)
+        self.vp.play(self.track,self.on_end,self.do_ready,self.do_starting,self.do_playing,self.do_finishing)
+    
+    # toggles pause
+    def pause_event(self,event):
+        self.vp._pause()  #bodge
 
-def stop_event(event):
-    global break_from_loop
-    break_from_loop=True
-    vp.stop()
+    def stop_event(self,event):
+        self.break_from_loop=True
+        self.vp._stop()   #bodge
+    
+    
+    def loop_event(self,event):
+      #just kick off the first track, callback decides what to do next
+        self.break_from_loop=False
+        self.vp=VideoPlayer(self.canvas,self.cd)
+        self.vp.play(self.track,self.what_next,self.do_starting,self.do_playing,self.do_finishing)
+    
+    
+    def next_event(self,event):
+        self.break_from_loop=False
+        self.vp.stop()
+    
+    
+    def what_next(self,message):
+        if self.break_from_loop==True:
+            self.break_from_loop=False
+            print "test harness: loop interupted"
+            return
+        else:
+            self.vp=VideoPlayer(self.canvas,self.cd)
+            self.vp.play(self.track,self.what_next,self.do_starting,self.do_playing,self.do_finishing)
+    
 
-
-def loop_event(event):
-  #just kick off the first track, callback decides what to do next
-    global break_from_loop
-    break_from_loop=False
-    vp.play(track,what_next,do_starting,do_playing,do_finishing)
-
-
-def next_event(event):
-    break_from_loop=False
-    vp.stop()
-
-
-def what_next(message):
-    global break_from_loop
-    if break_from_loop==True:
-        break_from_loop=False
-        print "test harness: loop interupted"
+    
+    def on_end(self,message):
+        print "Test Class: callback from VideoPlayer says: "+ message
         return
-    else:
-        vp.play(track,what_next,do_starting,do_playing,do_finishing)
+    
+    def do_ready(self):
+        print "test class message from videoplayer: ready to play"
+        return
+    
+    def do_starting(self):
+        print "test class message from videoplayer: do starting"
+        return
+    
+    def do_playing(self):
+        self.display_time.set(self.time_string(self.vp.video_position))
+        print "test class message from videoplayer: do playing"
+        return
+    
+    def do_finishing(self):
+        print "test class messgae from videoplayer: do finishing"
+        return
+    
+    
+    def app_exit(self):
+        try:
+            self.vp
+        except AttributeError:
+            exit()
+        else:
+            self.vp.kill()
+            return
+        # kill the omplayer.bin if it is still running because window has been closed during a track playing.
+            exit()
 
-
-
-def on_end(message):
-    #print "Test harness: callback from VideoPlayer says: "+ message
-    return
-
-def do_starting():
-    #print "test harness: do starting"
-    return
-
-def do_playing():
-    display_time.set(time_string(vp.video_position))
-    return
-
-def do_finishing():
-    # print "test harness: do finishing"
-    return
-
-
-def app_exit():
-    # kill the ompllayer.bin if it is still running because window has been closed during a track playing.
-        vp.kill()
-        exit()
-
+# end of Test Class
 
 
 if __name__ == '__main__':
 
-    global break_from_loop
-     
-    # create and instance of a Tkinter top level window and refer to it as 'my_window'
-    my_window=Tk()
-    my_window.title("VideoPlayer Test Harness")
 
-    # change the look of the window
-    my_window.configure(background='grey')
-    window_width=200
-    window_height=200
-
-    canvas_height=window_height
-    canvas_width=window_width
-
-
-    #defne response to main window closing
-    my_window.protocol ("WM_DELETE_WINDOW", app_exit)
+    """
+    To run the test harness edit track to something suitable then run  with  python pp_videoplayer.py
     
-    my_window.geometry("%dx%d+200+20" %(window_width,window_height))
-
-    my_window.bind("s", play_event)
-    my_window.bind("p", pause_event)
-    my_window.bind("r", resume_event)
-    my_window.bind("q", stop_event)
-    my_window.bind("l", loop_event)
-    my_window.bind("n", next_event)
+    s - play a track single shot
+    p - pause/resume
+    q - quit
     
-    #setup a canvas onto which will not be drawn the video!!
-    canvas = Canvas(my_window, bg='black')
-    canvas.config(height=canvas_height, width=canvas_width)
-    canvas.grid(row=1,columnspan=2)
-    
-    # make sure focus is set on canvas.
-    canvas.focus_set()
-
-    display_time = tk.StringVar()
-# define time/status display for selected track
-    time_label = Label(canvas, font=('Comic Sans', 11),
-                            fg = 'black', wraplength = 300,
-                            textvariable=display_time, bg="grey")
-    time_label.grid(row=0, column=0, columnspan=1)
+    l - loop the track continuously
+    p - as above
+    n - skip to next track
+    q - stops the track and breaks out of the loop
+    """
 
     #track is used as a global variable in the test  harness.
-    track="/home/pi/pipresents/videos/xthresh.mp4"
-    break_from_loop=False
+    track="/home/pi/pipresents/pp_home/media/x t'hresh.mp4"
     #create a dictionary of options and create a videoplayer object
     cd={'omx-other-options' : '-t on',
-            'omx-audio' : '-o hdmi'}
-    vp=VideoPlayer(canvas,cd)
+            'omx-audio' : 'hdmi'}
+    Monitor.global_enable=True
+    test=Test(cd,track,cd)
 
-
-    my_window.mainloop()
 
 
                                             

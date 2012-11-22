@@ -4,9 +4,12 @@ import sys
 
 from threading import Thread
 from time import sleep
+from pp_utils import Monitor
 
 """
 6/11/2012 initial issue
+changed omxplayer to omxdriver
+bug - constants now referred to by class name
 
  pyomxplayer from https://github.com/jbaiter/pyomxplayer
  extensively modified by KenT
@@ -37,7 +40,7 @@ Signals
 
 """
 
-class OMXPlayer(object):
+class OMXDriver(object):
 
     _STATUS_REXP = re.compile(r"V :\s*([\d.]+).*")
     _DONE_REXP = re.compile(r"have a nice day.*")
@@ -45,26 +48,21 @@ class OMXPlayer(object):
     _LAUNCH_CMD = '/usr/bin/omxplayer -s '  #needs changing if user has installed his own version of omxplayer elsewhere
 
     def __init__(self):
+        
+        self.mon=Monitor()
+        self.mon.on()
+        
         self.paused=None
 
     def control(self,char):
         self._process.send(char)
 
     def pause(self):
+        self._process.send('p')       
         if not self.paused:
-            self._process.send('p')
             self.paused = True
-            return True
         else:
-            return False
-
-    def resume(self):
-        if  self.paused:
-            self._process.send('p')
-            self.paused = False
-            return True
-        else:
-            return False
+            self.paused=False
 
     def play(self, track, options):
         self._pp(track, options,False)
@@ -100,15 +98,16 @@ class OMXPlayer(object):
 # ************************************
 
     def _pp(self, track, options,  pause_before_play):
+        self.paused=False
         self.start_play_signal = False
         self.end_play_signal=False
-
-        cmd = OMXPlayer._LAUNCH_CMD + options +" " + track
-        # print cmd
+        track= "'"+ track.replace("'","'\\''") + "'"
+        cmd = OMXDriver._LAUNCH_CMD + options +" " + track
+        self.mon.log(self, "Send command to omxplayer: "+ cmd)
         self._process = pexpect.spawn(cmd)
         
         # uncomment to monitor output to and input from omxplayer.bin (read pexpect manual)
-        #fout= file('logfile.txt','w')  #uncomment and change sys.stdout to fout to log to a file
+        #fout= file('omxlogfile.txt','w')  #uncomment and change sys.stdout to fout to log to a file
         #self._process.logfile_send = sys.stdout  # send just commands to stdout
         #self._process.logfile=fout  # send all communications to log file
 
@@ -116,7 +115,7 @@ class OMXPlayer(object):
             self._process.send('p')
             self.paused = True
             
-        #start the thread that is going to monitor sys.stdout. presumably needs a thread because of blocking
+        #start the thread that is going to monitor sys.stdout. Presumably needs a thread because of blocking
         self._position_thread = Thread(target=self._get_position)
         self._position_thread.start()
 
@@ -127,10 +126,10 @@ class OMXPlayer(object):
         self.audio_position=0.0
         
         while True:
-            index = self._process.expect([self._STATUS_REXP,
+            index = self._process.expect([OMXDriver._STATUS_REXP,
                                             pexpect.TIMEOUT,
                                             pexpect.EOF,
-                                            self._DONE_REXP])
+                                            OMXDriver._DONE_REXP])
             if index == 1: continue            # timeout - it doesn't block so is a thread needed?
             elif index in (2, 3):
                 #Have a nice day detected
@@ -150,7 +149,7 @@ class OMXPlayer(object):
 class Test1:
 
     def __init__(self):
-        self.omx = OMXPlayer()
+        self.omx = OMXDriver()
     
     def play(self):
         self.omx.play(track,options)
@@ -185,8 +184,8 @@ class Test1:
                 
 class Test2:
     def __init__(self):
-        self.omx1 = OMXPlayer()
-        self.omx2 = OMXPlayer()
+        self.omx1 = OMXDriver()
+        self.omx2 = OMXDriver()
     
     def play(self):
         self.omx1.play(track,options)
@@ -226,7 +225,7 @@ class Test2:
 
     
 if __name__ == '__main__':
-    track = "/home/pi/pipresents/videos/xthresh.mp4"
+    track = "/home/pi/pipresents/media/xthresh.mp4"
     options="-o hdmi"
     
     # test 1 plays the track twice with no overlap
