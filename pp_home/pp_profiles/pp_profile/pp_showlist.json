@@ -1,0 +1,30 @@
+{
+ "shows": [
+  {
+   "show-ref": "start", 
+   "start-show": "mymediashow", 
+   "title": "Start", 
+   "type": "start"
+  }, 
+  {
+   "duration": "0", 
+   "has-child": "no", 
+   "hint-colour": "", 
+   "hint-font": "", 
+   "hint-text": "", 
+   "hint-y": "", 
+   "medialist": "media.json", 
+   "omx-audio": "hdmi", 
+   "omx-other-options": "", 
+   "progress": "auto", 
+   "repeat": "oneshot", 
+   "repeat-interval": "", 
+   "sequence": "ordered", 
+   "show-ref": "mymediashow", 
+   "title": "Mediashow", 
+   "transition": "cut", 
+   "trigger": "start", 
+   "type": "mediashow"
+  }
+ ]
+}

@@ -1,9 +1,5 @@
 import time
 
-"""
-6/11/2012 - first issue
-"""
-
 class StopWatch:
     
     global_enable=False
@@ -35,6 +31,7 @@ class StopWatch:
 class Monitor:
     global_enable=False
     start_time= time.time()
+    ofile=open("pp_log.log","w")
     
     def __init__(self):
         self.enable=False
@@ -47,7 +44,13 @@ class Monitor:
 
     def err(self,caller,text):
         print "%.2f" % (time.time()-Monitor.start_time), " ERROR: ",caller.__class__.__name__," ", text
+        Monitor.ofile.write (" ERROR: " + caller.__class__.__name__ + ":  " + text + "\n")
 
     def log(self,caller,text):
         if Monitor.global_enable and self.enable:
              print "%.2f" % (time.time()-Monitor.start_time), " ",caller.__class__.__name__," ", text
+             Monitor.ofile.write (caller.__class__.__name__ +": " + text+"\n")
+             
+    def finish(self):
+        Monitor.ofile.close()
+        pass

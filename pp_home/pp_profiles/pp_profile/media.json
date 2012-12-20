@@ -1,0 +1,13 @@
+{
+ "tracks": [
+  {
+   "duration": "0", 
+   "message-colour": "white", 
+   "message-font": "Helvetica 20 bold", 
+   "text": "Welcome to Pi Presents\n\nYou are seeing this because you have not specified a profile\n\n", 
+   "title": "Hello World", 
+   "track-ref": "", 
+   "type": "message"
+  }
+ ]
+}

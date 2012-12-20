@@ -9,10 +9,9 @@ changed test harness into a class.
 added button_pressed, possibly key_pressed
 key pressed is now passed name of key rather than event.
 removed sending other controls to driver from key_pressed
-don't need an externalstop  function as the escape key does it.
+don't need an external stop  function as the escape key does it.
 added a ready to play callback
 added track level configuration dictionary.
-
 """
 
 import time
@@ -35,8 +34,15 @@ class VideoPlayer:
 # EXTERNAL COMMANDS
 # ***************************************
 
-    def __init__(self,canvas, cd,track_params ):
-
+    def __init__(self,
+                        canvas, 
+                        cd,
+                        track_params ):
+        """       
+            canvas - the canvas onto which the video is to be drawn (not!!)
+            cd - configuration dictionary
+            track_params - config dictionary for this track overides cd
+        """
         self.mon=Monitor()
         self.mon.on()
         
@@ -46,29 +52,34 @@ class VideoPlayer:
         self.track_params=track_params
         
         # get config from medialist if there.
-        if 'omx-audio' in self.track_params:
+        if 'omx-audio' in self.track_params and self.track_params['omx-audio']<>"":
             self.omx_audio= self.track_params['omx-audio']
         else:
             self.omx_audio= self.cd['omx-audio']
+        if self.omx_audio<>"": self.omx_audio= "-o "+ self.omx_audio
             
         # could put instance generation in play, not sure which is better.
         self.omx=OMXDriver()
+        self._tick_timer=None
         self._init_play_state_machine()
 
 
 
-    def play(self, track, finished_callback=None,
-                     ready_callback=None,
+    def play(self, track,
+                     end_callback,
+                     ready_callback,
+                     enable_menu=False, 
                      starting_callback=None,
                      playing_callback=None,
                      ending_callback=None):
                          
-        #instantiate arguements
-        self.ready_callback=ready_callback
-        self.finished_callback=finished_callback
-        self.starting_callback=starting_callback
-        self.playing_callback=playing_callback
-        self.ending_callback=ending_callback
+        #instantiate arguments
+        self.ready_callback=ready_callback   #callback when ready to play
+        self.end_callback=end_callback         # callback when finished
+        self.starting_callback=starting_callback  #callback during starting state
+        self.playing_callback=playing_callback    #callback during playing state
+        self.ending_callback=ending_callback      # callback dugin ending state
+        # enable_menu is not used by videoplayer
  
         # and start playing the video.
         if self.play_state == VideoPlayer._CLOSED:
@@ -83,7 +94,7 @@ class VideoPlayer:
     def key_pressed(self,key_name):
         if key_name=='':
             return
-        elif key_name in ('p'):
+        elif key_name in ('p',' '):
             self._pause()
             return
         elif key_name=='escape':
@@ -103,6 +114,9 @@ class VideoPlayer:
     def kill(self):
         if self.omx<>None:
             self.omx.kill()
+        if self._tick_timer<>None:
+            self.canvas.after_cancel(self._tick_timer)
+            self._tick_timer=None
 
 
 # ***************************************
@@ -159,9 +173,9 @@ class VideoPlayer:
         self.play_state=VideoPlayer._STARTING
         
         #play the selected track
-        options="-o "+ self.omx_audio+" "+self.cd['omx-other-options']+" "
+        options=self.omx_audio+" "+self.cd['omx-other-options']+" "
         self.omx.play(track,options)
-        self.canvas.after(50, self._play_state_machine)
+        self._tick_timer=self.canvas.after(50, self._play_state_machine)
  
 
     def _play_state_machine(self):
@@ -183,7 +197,7 @@ class VideoPlayer:
                 self.play_state=VideoPlayer._PLAYING
                 self.mon.log(self,"      State machine: omx_playing started")
             self._do_starting()
-            self.canvas.after(50, self._play_state_machine)
+            self._tick_timer=self.canvas.after(50, self._play_state_machine)
 
         elif self.play_state == VideoPlayer._PLAYING:
             # self.mon.log(self,"      State machine: " + self.play_state)
@@ -199,7 +213,7 @@ class VideoPlayer:
                 self.mon.log(self,"            <end detected at: " + str(self.omx.video_position))
                 self.play_state = VideoPlayer._ENDING
             self._do_playing()
-            self.canvas.after(200, self._play_state_machine)
+            self._tick_timer=self.canvas.after(200, self._play_state_machine)
 
         elif self.play_state == VideoPlayer._ENDING:
             self.mon.log(self,"      State machine: " + self.play_state)
@@ -209,11 +223,11 @@ class VideoPlayer:
             if self.omx.is_running() ==False:
                 self.mon.log(self,"            <omx process is dead")
                 self.play_state = VideoPlayer._CLOSED
-                if self.finished_callback<>None:
-                    self.finished_callback("track has terminated")
+                if self.end_callback<>None:
+                    self.end_callback("track has terminated")
                 self=None
             else:
-                self.canvas.after(200, self._play_state_machine)
+                self._tick_timer=self.canvas.after(200, self._play_state_machine)
 
 
     # allow calling object do things in each state by calling the appropriate callback
