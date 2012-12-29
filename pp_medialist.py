@@ -11,9 +11,9 @@ class MediaList:
     """
     manages a media list of tracks and the track selected from the medialist
     """
-    IMAGE_FILES=('Image files', '.gif','.GIF','.jpg','.JPG','.jpeg','.JPEG')
-    VIDEO_FILES=('video files','.mp4','.MP4','.mkv','.MKV','.avi','.AVI')
-    AUDIO_FILES=('audio files','.mp3','.MP3')
+    IMAGE_FILES=('Image files', '.gif','.jpg','.jpeg')
+    VIDEO_FILES=('video files','.mp4','.mkv','.avi')
+    AUDIO_FILES=('audio files','.mp3')
 
     def __init__(self):
         self.clear()
@@ -45,6 +45,16 @@ class MediaList:
         self._num_tracks-=1
         # deselect any track, saves worrying about whether index needs changing
         self._selected_track_index=-1
+
+    def move_up(self):
+        if self._selected_track_index<>0:
+            self._tracks.insert(self._selected_track_index-1, self._tracks.pop(self._selected_track_index))
+            self.select(self._selected_track_index-1)
+
+    def move_down(self):
+        if self._selected_track_index<>self._num_tracks-1:
+            self._tracks.insert(self._selected_track_index+1, self._tracks.pop(self._selected_track_index))
+            self.select(self._selected_track_index+1)
 
     def replace(self,index,replacement):
         self._tracks[index]= replacement     
@@ -191,7 +201,7 @@ class MediaList:
         return -1
 
 
-# Input and output
+
 
     def open_list(self,filename):
         """
@@ -236,50 +246,6 @@ class MediaList:
             return True
         else:
             return False
-
-
-    # need to add tracks level !!!!!!!!!
-    def make_list_from_dir(self,directory):
-        image_specs =[
-            MediaList.IMAGE_FILES,
-            MediaList.VIDEO_FILES,
-            MediaList.AUDIO_FILES,
-          ('All files', '*')]    #last one is ignored in finding files
-                                    # in directory, for dialog box only
-
-        #print image_specs
-        # scan the directory for list of matching files
-        files = []
-        for image_spec in image_specs[:-1]:
-            image_list=image_spec[1:]
-            for ext in image_list:
-                files = files + glob('%s/*%s' % (directory, ext))
-        #print files
-
-        #now make a medialist from the files
-        self.clear()
-        for afile in files:
-            location = afile
-            file_pieces = afile.split("/")
-            title = file_pieces[-1]
-            title_pieces=title.split(".")
-            fext="."+title_pieces[-1]
-
-            if fext in MediaList.IMAGE_FILES:
-                ftype="image"
-            elif fext in MediaList.VIDEO_FILES:
-                ftype="video"
-            elif fext in MediaList.AUDIO_FILES:
-                ftype="audio"
-            else:
-                print fext + " - type not recognised"
-                continue
-            entry=dict([('type',ftype),('location',location),('title',title)])
-            #print entry
-            self.append(entry)
-
-                          
-
 
 
 # **************

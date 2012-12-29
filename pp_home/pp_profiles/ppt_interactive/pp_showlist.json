@@ -1,0 +1,52 @@
+{
+ "shows": [
+  {
+   "show-ref": "start", 
+   "start-show": "mediashow-internal", 
+   "title": "Start", 
+   "type": "start"
+  }, 
+  {
+   "duration": "5", 
+   "has-child": "yes", 
+   "hint-colour": "white", 
+   "hint-font": "Helvetica 30 bold", 
+   "hint-text": "Press Play to show a menu", 
+   "hint-y": "100", 
+   "medialist": "media.json", 
+   "omx-audio": "hdmi", 
+   "omx-other-options": "-t 1", 
+   "progress": "auto", 
+   "repeat": "interval", 
+   "repeat-interval": "0", 
+   "sequence": "ordered", 
+   "show-ref": "mediashow-internal", 
+   "title": "Mediashow", 
+   "transition": "cut", 
+   "trigger": "start", 
+   "type": "mediashow"
+  }, 
+  {
+   "duration": "5", 
+   "entry-colour": "black", 
+   "entry-font": "Helvetica 30 bold", 
+   "entry-select-colour": "red", 
+   "has-background": "yes", 
+   "hint-colour": "white", 
+   "hint-font": "Helvetica 30 bold", 
+   "hint-text": "Select using Up or Down, then Return", 
+   "hint-y": "100", 
+   "medialist": "menu.json", 
+   "menu-spacing": "70", 
+   "menu-x": "300", 
+   "menu-y": "250", 
+   "omx-audio": "hdmi", 
+   "omx-other-options": "", 
+   "show-ref": "mymenu", 
+   "timeout": "0", 
+   "title": "Menu", 
+   "transition": "cut", 
+   "type": "menu"
+  }
+ ]
+}

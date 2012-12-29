@@ -1,0 +1,32 @@
+{
+ "shows": [
+  {
+   "show-ref": "start", 
+   "start-show": "mymenu", 
+   "title": "Start", 
+   "type": "start"
+  }, 
+  {
+   "duration": "5", 
+   "entry-colour": "black", 
+   "entry-font": "Helvetica 30 bold", 
+   "entry-select-colour": "red", 
+   "has-background": "yes", 
+   "hint-colour": "white", 
+   "hint-font": "Helvetica 30 bold", 
+   "hint-text": "Select using Up or Down, then Return", 
+   "hint-y": "100", 
+   "medialist": "media.json", 
+   "menu-spacing": "70", 
+   "menu-x": "300", 
+   "menu-y": "250", 
+   "omx-audio": "hdmi", 
+   "omx-other-options": "", 
+   "show-ref": "mymenu", 
+   "timeout": "0", 
+   "title": "Menu", 
+   "transition": "cut", 
+   "type": "menu"
+  }
+ ]
+}

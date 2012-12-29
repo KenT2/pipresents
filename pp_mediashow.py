@@ -140,7 +140,7 @@ class MediaShow:
             else:
                 if self._state==MediaShow._PLAYING  and self.show['has-child']=="yes":
                     self._play_child()
-                elif  self._state==MediaShow._FRONT_PORCH and self.show['trigger']=="button":
+                elif  self._state==MediaShow._FRONT_PORCH and self.show['trigger']in("button","PIR"):
                     self._trigger_show()
                 
         elif key_name in ('p',' '):
@@ -155,8 +155,9 @@ class MediaShow:
         if button=='play': self.key_pressed("return")
         elif  button =='up': self.key_pressed("right")
         elif button=='down': self.key_pressed("left")
-        elif button=='stop': self.key_pressed("return")
+        elif button=='stop': self.key_pressed("escape")
         elif button=='pause': self.key_pressed('p')
+        elif button=='PIR': self.key_pressed('return')
 
 
     def kill(self):
@@ -264,7 +265,7 @@ class MediaShow:
         self._state=MediaShow._FRONT_PORCH
         # self.mon.log(self,"Starting front porch with trigger: "+ self.show['trigger'])     
         if self.show['trigger']=="button":
-            # blank screen waiting for trigger if auot otherwise display something
+            # blank screen waiting for trigger if auto, otherwise display something
             if self.show['progress']=="manual":
                 text="To start the show press 'Play'"
             else:

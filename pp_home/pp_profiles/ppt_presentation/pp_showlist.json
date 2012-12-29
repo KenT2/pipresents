@@ -1,0 +1,30 @@
+{
+ "shows": [
+  {
+   "show-ref": "start", 
+   "start-show": "mymediashow", 
+   "title": "Start", 
+   "type": "start"
+  }, 
+  {
+   "duration": "0", 
+   "has-child": "no", 
+   "hint-colour": "", 
+   "hint-font": "", 
+   "hint-text": "", 
+   "hint-y": "", 
+   "medialist": "media.json", 
+   "omx-audio": "hdmi", 
+   "omx-other-options": "", 
+   "progress": "manual", 
+   "repeat": "oneshot", 
+   "repeat-interval": "", 
+   "sequence": "ordered", 
+   "show-ref": "mymediashow", 
+   "title": "Example Presentation", 
+   "transition": "cut", 
+   "trigger": "button", 
+   "type": "mediashow"
+  }
+ ]
+}

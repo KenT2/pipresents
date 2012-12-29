@@ -143,7 +143,7 @@ class PiPresents:
             self.root.geometry("%dx%d+0+0" %(self.window_width,self.window_height))
             self.root.attributes('-zoomed','1')
         else:
-            self.window_width=self.screen_width-1000
+            self.window_width=self.screen_width-100
             self.window_height=self.screen_height-100
             self.root.geometry("%dx%d+0+0" %(self.window_width,self.window_height))
         

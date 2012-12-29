@@ -13,6 +13,7 @@ class Buttons:
     PLAY=3
     PAUSE=4
     STOP=5
+    PIR=6
 
     # locations of the _buttons array
     PIN=0                # pin on RPi board GPIO connector e.g. P1-11
