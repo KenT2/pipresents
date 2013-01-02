@@ -18,7 +18,7 @@
    "omx-other-options": "", 
    "progress": "auto", 
    "repeat": "interval", 
-   "repeat-interval": "70", 
+   "repeat-interval": "8", 
    "sequence": "ordered", 
    "show-ref": "mymediashow", 
    "title": "Mediashow", 

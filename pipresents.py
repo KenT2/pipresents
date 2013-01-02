@@ -26,21 +26,30 @@ from pp_utils import StopWatch
 
 
 class PiPresents:
-    def __init__(self,pp_dir):
+    def __init__(self):
         
         StopWatch.global_enable=False
-        self.mon=Monitor()
-        self.mon.on()
+
 #****************************************
 # INTERPRET COMMAND LINE
 # ***************************************
 
         self.options=command_options()
         
-
-        self.show=None
-        
-
+        # where am I?
+        if self.options['code']=="":
+            pp_dir="/home/pi/pipresents"
+        else:
+            pp_dir=self.options['code']
+            
+        if not os.path.exists(pp_dir+"/pipresents.py"):
+            tkMessageBox.showwarning("Pi Presents","Bad Application Directory")
+            exit()
+            
+        #Initialise logging
+        Monitor.log_path=pp_dir
+        self.mon=Monitor()
+        self.mon.on()
         if self.options['debug']==True:
             Monitor.global_enable=True
         else:
@@ -48,51 +57,44 @@ class PiPresents:
  
         self.mon.log (self, "Pi Presents is starting")
         
-        # create  profile  for pp_editor test files if not there.
+        #self.show=None
         
+        # create  profile  for pp_editor test files if already not there.
         if not os.path.exists(pp_dir+"/pp_home/pp_profiles/pp_editor"):
             self.mon.log(self,"Making pp_editor directory") 
             os.makedirs(pp_dir+"/pp_home/pp_profiles/pp_editor")
             
             
-        #alternative profile path options are used for editor etc.
+        #profile path from -p option
         if self.options['profile']<>"":
-            self.pp_profile_path=self.options['profile']
+            self.pp_profile_path="/pp_profiles/"+self.options['profile']
         else:
             self.pp_profile_path = "/pp_profiles/pp_profile"
         
-       #get directory containing the profiles from the command, check if exists, try second and third option
-        # allows for a usb stick which is not there, falling back to SDcard and then to an error config.
-        home=self.options['usbstick']
-        if home <>"":
-            # try usb stick for 10 seconds waiting for it to automount
-            for i in range (1, 10):
-                self.mon.log(self,"Trying USB Stick at: " + home +  " " + str(i))
-                if os.path.exists(home + "/pp_home"):
-                    self.pp_home= home+"/pp_home"
-                    self.mon.log(self,"Using USB Stick at: " + home)
-                    break
-                time.sleep (1)
+       #get directory containing pp_home from the command,
+        if self.options['home'] =="":
+            home = "/home/pi/pp_home"
         else:
-            self.mon.log(self,"USB Stick pp_home not found at " + home +" trying SD Card")
-            home=self.options['sdcard']
-            if home <>"" and os.path.exists(home+ "/pp_home"):
-                self.mon.log(self,"Using SD card at: " + home)
-                self.pp_home= home+"/pp_home"
-            else:
-                self.mon.log(self,"SD card pp_home not found at " + home + "  trying inside pipresents directory")
-                #if sys.argv[0].count("/") == 0:
-                    #self.pp_home=os.getcwd()+"/pp_home"
-                #else:
-                    #self.pp_home=os.path.dirname(sys.argv[0])+"/pp_home"
-                self.pp_home=pp_dir+"/pp_home"
-         
+            home = self.options['home'] + "/pp_home"
+                   
+        #check if pp_home exists
+        #  falling back to an error config.
+        # try for 10 seconds to allow usb stick to automount
+        self.pp_home=pp_dir+"/pp_home"
+        for i in range (1, 10):
+            self.mon.log(self,"Trying pp_home at: " + home +  " " + str(i))
+            if os.path.exists(home):
+                self.mon.log(self,"Using pp_home at: " + home)
+                self.pp_home=home
+                break
+            time.sleep (1)
 
-        #and the current profile is in 
+        #check profile exists, if not default to error profile inside pipresents
         self.pp_profile=self.pp_home+self.pp_profile_path
-
+        if not os.path.exists(self.pp_profile):
+            self.pp_profile=pp_dir+"/pp_home/pp_profiles/pp_profile"
+            
         #initialise the showlists and read the showlists
-        
         self.showlist=ShowList()
         self.showlist_file= self.pp_profile+ "/pp_showlist.json"
         if os.path.exists(self.showlist_file):
@@ -136,16 +138,28 @@ class PiPresents:
         self.screen_height = self.root.winfo_screenheight()
 
         # set window dimensions
-        if self.options['fullscreen']==True:
-            # allow just 2 pixels for the hidden taskbar at left of screen
-            self.window_width=self.screen_width-2
-            self.window_height=self.screen_height
-            self.root.geometry("%dx%d+0+0" %(self.window_width,self.window_height))
+        self.window_height=self.screen_height
+        self.window_width=self.screen_width
+        self.window_x=0
+        self.window_y=0
+        if self.options['fullscreen']<>"":
+            bar=self.options['fullscreen']
+            # allow just 2 pixels for the hidden taskbar
+            if bar in ('left','right'):
+                self.window_width=self.screen_width-2
+            else:
+                self.window_height=self.screen_height-2
+            if bar =="left":
+                self.window_x=2
+            if bar =="top":
+                self.window_y=2   
+            self.root.geometry("%dx%d%+d%+d"  % (self.window_width,self.window_height,self.window_x,self.window_y))
             self.root.attributes('-zoomed','1')
         else:
             self.window_width=self.screen_width-100
             self.window_height=self.screen_height-100
-            self.root.geometry("%dx%d+0+0" %(self.window_width,self.window_height))
+            self.root.geometry("%dx%d%+d%+d" % (self.window_width,self.window_height,self.window_x,self.window_y))
+
         
         #canvas covers the whole window
         self.canvas_height=self.window_height
@@ -311,12 +325,11 @@ class PiPresents:
 
 if __name__ == '__main__':
 
-    # arguement should be the location of pi presents
-    pp = PiPresents("/home/pi/pipresents")
+    pp = PiPresents()
     #try:
         #pp = PiPresents()
     #except:
-        # traceback.print_exc(file=open("pp_exceptions.log","w"))
+        # traceback.print_exc(file=open("/home/pi/pp_exceptions.log","w"))
         #pass
 
 

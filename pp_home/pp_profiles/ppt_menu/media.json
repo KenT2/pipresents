@@ -1,10 +1,19 @@
 {
- "tracks": [ 
+ "tracks": [
   {
    "location": "+/media/sunset.gif", 
    "title": "Menu Background", 
    "track-ref": "pp-menu-background", 
    "type": "menu-background"
+  }, 
+  {
+   "duration": "5", 
+   "message-colour": "white", 
+   "message-font": "Helvetica 30 bold", 
+   "text": "First Track of ppt_menu\n", 
+   "title": "Example Track", 
+   "track-ref": "", 
+   "type": "message"
   }
  ]
 }

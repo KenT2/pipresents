@@ -131,12 +131,10 @@ class ImagePlayer:
   
      #called when back porch has completed or quit signal is received
     def _end(self):
-        self.mon.log(self,"ending")
         self.quit_signal=False
         self.canvas.delete(ALL)
         self.canvas.update_idletasks( )
         self.state=self.NO_SLIDE
-        self.mon.log(self,"deleted")
         self.end_callback("ImagePlayer ended")
         self=None
 
@@ -279,7 +277,7 @@ class ImagePlayer:
                                                   image=self.tk_img, anchor=CENTER)
             
         # display instructions if enabled
-        if self.enable_menu == True:
+        if self.enable_menu== True:
             self.canvas.create_text(self.centre_x, int(self.canvas['height']) - int(self.cd['hint-y']),
                                                   text=self.cd['hint-text'],
                                                   fill=self.cd['hint-colour'],

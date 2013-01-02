@@ -313,8 +313,8 @@ class MediaShow:
             self._play_child_signal=False
             index = self.medialist.index_of_track('pp-child-show')
             if index >=0:
-                self.medialist.select(index)
-                child_track=self.medialist.selected_track()
+                #don't select the track as need to preserve mediashow sequence.
+                child_track=self.medialist.track(index)
                 self._display_eggtimer("Loading.....")
                 self._play_selected_track(child_track)
             else:
@@ -363,8 +363,12 @@ class MediaShow:
         self._state=MediaShow._BACK_PORCH
         self.mon.log(self,"Starting back porch with repeat: "+ self.show['repeat'])
         
+        #not at top so stop the show to get back to parent
+        if self.top==False:
+            self._end("Return from Sub Show")
+        
         #oneshot - restart the show waiting for trigger. 
-        if self.show['repeat']=="oneshot":
+        elif self.show['repeat']=="oneshot":
             self._start_front_porch()
             
         #interval - wait for interval timer if interval is non-zero

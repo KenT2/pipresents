@@ -11,7 +11,7 @@
    "entry-colour": "black", 
    "entry-font": "Helvetica 30 bold", 
    "entry-select-colour": "red", 
-   "has-background": "yes", 
+   "has-background": "no", 
    "hint-colour": "white", 
    "hint-font": "Helvetica 30 bold", 
    "hint-text": "Select using Up or Down, then Return", 

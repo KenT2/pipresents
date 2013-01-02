@@ -4,7 +4,7 @@
    "duration": "0", 
    "message-colour": "white", 
    "message-font": "Helvetica 20 bold", 
-   "text": "Welcome to Pi Presents\n\nYou are seeing this because you have not specified a profile\n\n", 
+   "text": "Welcome to Pi Presents\n\nYou are seeing this because\n\nthe command line specified\n\na profile that does not exist\n\nDon't panic, continue reading the manual", 
    "title": "Hello World", 
    "track-ref": "", 
    "type": "message"

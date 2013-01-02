@@ -100,7 +100,9 @@ class MenuShow:
         
         if self.ready_callback<>None:
             self.ready_callback()
-            
+        
+        self.canvas.delete(ALL)
+        
         # display background image
         if self.show['has-background']=="yes":
             self._display_background()

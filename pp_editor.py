@@ -15,7 +15,7 @@ import shutil
 from pp_medialist import MediaList
 from pp_showlist import ShowList
 from pp_utils import Monitor
-
+from pp_options import ed_options
 
 #**************************
 # Pi Presents Editor Class
@@ -23,6 +23,9 @@ from pp_utils import Monitor
 
 class PPEditor:
 
+    IMAGE_FILES=('Image files', '.gif','.jpg','.jpeg','.bmp','.png','.tif')
+    VIDEO_FILES=('video files','.mp4','.mkv','.avi','.mp2','.wmv')
+    AUDIO_FILES=('audio files','.mp3')
 
 # ***************************************
 # INIT
@@ -30,20 +33,31 @@ class PPEditor:
 
     def __init__(self):
 
-
-        # initialise options class and do initial reading/creation of options
-        self.options=Options()
+        self.command_options=ed_options()
         
-        if self.options.debug == True:
+        # where am I?
+        if self.command_options['code']=="":
+            pp_dir="/home/pi/pipresents"
+        else:
+            pp_dir=self.command_options['code']
+            
+        if not os.path.exists(pp_dir+"/pp_editor.py"):
+            tkMessageBox.showwarning("Pi Presents","Bad Application Directory")
+            exit()
+            
+        #Initialise logging
+        Monitor.log_path=pp_dir
+        self.mon=Monitor()
+        self.mon.on()
+
+        if self.command_options['debug'] == True:
             Monitor.global_enable=True
         else:
             Monitor.global_enable=False
 
-        self.mon=Monitor()
-        self.mon.on()
-
         self.mon.log (self, "Pi Presents Editor is starting")
-        self.profile_dir=""
+
+ 
         #root is the Tkinter root widget
         self.root = tk.Tk()
         self.root.title("Editor for Pi Presents")
@@ -214,11 +228,12 @@ class PPEditor:
 
 
 # initialise variables
-        self.current_medialist=None
-        self.current_showlist=None
-        self.current_show=None
-        self.pp_home_dir = self.options.pp_home_dir
-        print self.pp_home_dir
+
+       # initialise editor options class and do initial reading/creation of options
+        self.options=Options() #creates options file if necessary
+        self.init()
+        
+
 
 #and display them going with Tkinter event loop
         self.root.mainloop()        
@@ -230,6 +245,18 @@ class PPEditor:
         exit()
 
 
+    def init(self):
+        self.options.read()
+        self.pp_home_dir = self.options.pp_home_dir
+        self.initial_media_dir = self.options.initial_media_dir
+        self.mon.log(self,"Data Home is "+self.pp_home_dir)
+        self.mon.log(self,"Initial Media is "+self.initial_media_dir)
+        self.current_medialist=None
+        self.current_showlist=None
+        self.current_show=None
+        self.shows_display.delete(0,END)
+        self.medialists_display.delete(0,END)
+        self.tracks_display.delete(0,END)
 
 
 
@@ -241,7 +268,7 @@ class PPEditor:
     def edit_options(self):
         """edit the options then read them from file"""
         eo = OptionsDialog(self.root, self.options.options_file,'Edit Options')
-        self.options.read()
+        if eo.result==True: self.init()
 
 
     def show_help (self):
@@ -266,17 +293,20 @@ class PPEditor:
 
     def open_existing_profile(self):
         initial_dir=self.pp_home_dir+os.sep+"pp_profiles"
-        print "initial ",initial_dir
         dir_path=tkFileDialog.askdirectory(initialdir=initial_dir)
-        print "path ",dir_path
-        self.open_profile(dir_path)
+        if dir_path<>"":
+            self.open_profile(dir_path)
         
 
     def open_profile(self,dir_path):
-        self.profile_dir = dir_path
-        self.root.title("Editor for Pi Presents - "+ self.profile_dir)
-        self.open_showlist(self.profile_dir)
-        self.open_medialists(self.profile_dir)
+        showlist_file = dir_path + os.sep + "pp_showlist.json"
+        if os.path.exists(showlist_file)==False:
+            self.mon.err(self,"Not a Profile: " + dir_path + "\n\nHint: Have you clicked in the profile directory?")
+            return
+        self.pp_profile_dir = dir_path
+        self.root.title("Editor for Pi Presents - "+ self.pp_profile_dir)
+        self.open_showlist(self.pp_profile_dir)
+        self.open_medialists(self.pp_profile_dir)
         self.refresh_tracks_display()
 
 
@@ -325,15 +355,12 @@ class PPEditor:
 # ***************************************
 
     def open_showlist(self,dir):
-        #if self.current_showlist<>None:
-          #  self.current_showlist.destroy()
-        self.current_showlist=ShowList()
         showlist_file = dir + os.sep + "pp_showlist.json"
-        if os.path.exists(showlist_file):
-            self.current_showlist.open_json(showlist_file)
-        else:
-            self.mon.err(self,"showlist file not found at " + showlist_file)
+        if os.path.exists(showlist_file)==False:
+            self.mon.err(self,"showlist file not found at " + dir + "\n\nHint: Have you clicked in the profile directory?")
             self.app_exit()
+        self.current_showlist=ShowList()
+        self.current_showlist.open_json(showlist_file)
         self.refresh_shows_display()
 
 
@@ -366,7 +393,7 @@ class PPEditor:
         # append it to the showlist
         if self.current_showlist<>None:
             self.current_showlist.append(default)
-            self.save_showlist(self.profile_dir)
+            self.save_showlist(self.pp_profile_dir)
             self.refresh_shows_display()
 
 
@@ -374,7 +401,7 @@ class PPEditor:
         if  self.current_showlist<>None and self.current_showlist.length()>0 and self.current_showlist.show_is_selected():
             index= self.current_showlist.selected_show_index()
             self.current_showlist.remove(index)
-            self.save_showlist(self.profile_dir)
+            self.save_showlist(self.pp_profile_dir)
             self.refresh_shows_display()
 
     def show_refs(self):
@@ -461,7 +488,7 @@ class PPEditor:
             d=EditItemDialog(self.root,"Edit Show",self.current_showlist.selected_show(),show_types,field_specs,self.show_refs())
             if d.result == True:
 
-                self.save_showlist(self.profile_dir)
+                self.save_showlist(self.pp_profile_dir)
                 self.refresh_shows_display()
 
  
@@ -489,9 +516,7 @@ class PPEditor:
             name=str(d.result)
             if not name.endswith(".json"):
                 name=name+(".json")
-                print name
-            path = self.profile_dir + os.sep + name
-            print path
+            path = self.pp_profile_dir + os.sep + name
             if os.path.exists(path)== False:
                 nfile = open(path,'wb')
                 nfile.write("{")
@@ -516,8 +541,8 @@ class PPEditor:
     def remove_medialist(self):
         if self.current_medialist<>None:
             if tkMessageBox.askokcancel("Delete Medialist","Delete Medialist"):
-                os.remove(self.profile_dir+ os.sep + self.medialists[self.current_medialists_index])
-                self.open_medialists(self.profile_dir)
+                os.remove(self.pp_profile_dir+ os.sep + self.medialists[self.current_medialists_index])
+                self.open_medialists(self.pp_profile_dir)
                 self.refresh_medialists_display()
                 self.refresh_tracks_display()
 
@@ -530,7 +555,7 @@ class PPEditor:
         if len(self.medialists)>0:
             self.current_medialists_index=int(event.widget.curselection()[0])
             self.current_medialist=MediaList()
-            self.current_medialist.open_list(self.profile_dir+ os.sep + self.medialists[self.current_medialists_index])
+            self.current_medialist.open_list(self.pp_profile_dir+ os.sep + self.medialists[self.current_medialists_index])
             self.refresh_tracks_display()
             self.refresh_medialists_display()
 
@@ -544,7 +569,7 @@ class PPEditor:
             self.medialists_display.see(self.current_medialists_index)
 
     def save_medialist(self):
-        self.current_medialist.save_list(self.profile_dir+ os.sep + self.medialists[self.current_medialists_index])
+        self.current_medialist.save_list(self.pp_profile_dir+ os.sep + self.medialists[self.current_medialists_index])
 
           
 # ***************************************
@@ -669,9 +694,9 @@ class PPEditor:
     def add_tracks_from_dir(self):
         if self.current_medialist==None: return
         image_specs =[
-            MediaList.IMAGE_FILES,
-            MediaList.VIDEO_FILES,
-            MediaList.AUDIO_FILES,
+            PPEditor.IMAGE_FILES,
+            PPEditor.VIDEO_FILES,
+            PPEditor.AUDIO_FILES,
           ('All files', '*')]    #last one is ignored in finding files
                                     # in directory, for dialog box only
         directory=tkFileDialog.askdirectory(initialdir=self.options.initial_media_dir)
@@ -705,13 +730,13 @@ class PPEditor:
             location = "+" + os.sep + relpath
         (root,title)=os.path.split(afile)
         (root,ext)= os.path.splitext(afile)
-        if ext.lower() in MediaList.IMAGE_FILES:
+        if ext.lower() in PPEditor.IMAGE_FILES:
             image={'title':title,'track-ref':'','type':'image','location':location,'duration':'5','transition':'cut'}
             self.new_track(image)
-        elif ext.lower() in MediaList.VIDEO_FILES:
+        elif ext.lower() in PPEditor.VIDEO_FILES:
             video={'title':title,'track-ref':'','type':'video','location':location,'omx-audio':''}
             self.new_track(video)
-        elif ext.lower() in MediaList.AUDIO_FILES:
+        elif ext.lower() in PPEditor.AUDIO_FILES:
             video={'title':title,'track-ref':'','type':'video','location':location,'omx-audio':''}
             self.new_track(video)
         else:
@@ -754,7 +779,7 @@ class Options:
 
 # store associated with the object is the disc file. Variables used by the player
 # is just a cached interface.
-# options dialog class is a second class that reads and saves the otions from the options file
+# options dialog class is a second class that reads and saves the options from the options file
 
     def __init__(self):
 
@@ -766,11 +791,9 @@ class Options:
 
     # create an options file if necessary
         self.options_file = 'pp_editor.cfg'
-        if os.path.exists(self.options_file):
-            self.read()
-        else:
+        if not os.path.exists(self.options_file):
             self.create()
-            self.read()
+
 
     
     def read(self):
@@ -781,18 +804,11 @@ class Options:
         self.pp_home_dir =config.get('config','home',0)
         self.initial_media_dir =config.get('config','media',0)    
 
-        if config.get('config','debug',0) == 'on':
-            self.debug  =True
-        else:
-            self.debug=False
-
-     
     def create(self):
         config=ConfigParser.ConfigParser()
         config.add_section('config')
-        config.set('config','home','')
-        config.set('config','media','')
-        config.set('config','debug','off')
+        config.set('config','home','/home/pi/pp_home')
+        config.set('config','media','/home/pi/pp_home')
         with open(self.options_file, 'wb') as config_file:
             config.write(config_file)
 
@@ -813,7 +829,7 @@ class OptionsDialog(tkSimpleDialog.Dialog):
 
 
     def body(self, master):
-
+        self.result=False
         config=ConfigParser.ConfigParser()
         config.read(self.options_file)
 
@@ -829,19 +845,20 @@ class OptionsDialog(tkSimpleDialog.Dialog):
         self.e_media.grid(row=32)
         self.e_media.insert(0,config.get('config','media',0))
 
-        self.debug_var = StringVar()
-        self.cb_debug = Checkbutton(master,text="Debug Editor",variable=self.debug_var, onvalue="on",offvalue="off")
-        self.cb_debug.grid(row=50,columnspan=2, sticky = W)
-        if config.get('config','debug',0)=="on":
-            self.cb_debug.select()
-        else:
-            self.cb_debug.deselect()
-
         return None    # no initial focus
+
+    def validate(self):
+        if os.path.exists(self.e_home.get())== False:
+            tkMessageBox.showwarning("Pi Presents Editor","Data Home not found")
+            return 0
+        if os.path.exists(self.e_media.get())== False:
+            tkMessageBox.showwarning("Pi Presents Editor","Media Directory not found")
+            return 0
+        return 1
 
     def apply(self):
         self.save_options()
-        return True
+        self.result=True
 
     def save_options(self):
         """ save the output of the options edit dialog to file"""
@@ -849,7 +866,6 @@ class OptionsDialog(tkSimpleDialog.Dialog):
         config.add_section('config')
         config.set('config','home',self.e_home.get())
         config.set('config','media',self.e_media.get())
-        config.set('config','debug',self.debug_var.get())
         with open(self.options_file, 'wb') as optionsfile:
             config.write(optionsfile)
     
@@ -984,6 +1000,6 @@ class EditItemDialog(tkSimpleDialog.Dialog):
 
 
 if __name__ == "__main__":
-    datestring=" 20 Nov 2012"
+    datestring=" 2 Jan 2013"
     editor = PPEditor()
 

@@ -1,4 +1,5 @@
 import time
+import tkMessageBox
 
 class StopWatch:
     
@@ -29,11 +30,14 @@ class StopWatch:
 
 
 class Monitor:
-    global_enable=False
+    global_enable=False 
+    log_path=""
+    ofile=None
     start_time= time.time()
-    ofile=open("pp_log.log","w")
-    
+
     def __init__(self):
+        if Monitor.ofile==None:
+            Monitor.ofile=open(Monitor.log_path+"/pp_log.log","w")          
         self.enable=False
 
     def on(self):
@@ -45,6 +49,10 @@ class Monitor:
     def err(self,caller,text):
         print "%.2f" % (time.time()-Monitor.start_time), " ERROR: ",caller.__class__.__name__," ", text
         Monitor.ofile.write (" ERROR: " + caller.__class__.__name__ + ":  " + text + "\n")
+        tkMessageBox.showwarning(
+                                caller.__class__.__name__ ,
+                                text
+                                        )
 
     def log(self,caller,text):
         if Monitor.global_enable and self.enable:

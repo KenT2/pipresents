@@ -19,11 +19,11 @@ class Buttons:
     PIN=0                # pin on RPi board GPIO connector e.g. P1-11
     NAME=1             # name for callback
     THRESHOLD=2    #threshold of debounce count for on state change to be considered
-    COUNT=3           # count of the number of times the input has been 0 (limited to threshold)
-    PRESSED=4        # debounced state 
-    LAST = 5              # last state - used to detect edge
-    FRONT_EDGE=6      #True if calback on front edge
-    BACK_EDGE=7      #True if callback on backedge
+    COUNT=3           # variable - count of the number of times the input has been 0 (limited to threshold)
+    PRESSED=4        # variable - debounced state 
+    LAST = 5              # varible - last state - used to detect edge
+    FRONT_EDGE=6      #True if calback required on front edge
+    BACK_EDGE=7      #True if callback required on backedge
 
     def reset_buttons(self):
         for but in self._buttons:

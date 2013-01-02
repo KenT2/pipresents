@@ -11,9 +11,7 @@ class MediaList:
     """
     manages a media list of tracks and the track selected from the medialist
     """
-    IMAGE_FILES=('Image files', '.gif','.jpg','.jpeg')
-    VIDEO_FILES=('video files','.mp4','.mkv','.avi')
-    AUDIO_FILES=('audio files','.mp3')
+    
 
     def __init__(self):
         self.clear()
