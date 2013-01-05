@@ -740,7 +740,7 @@ class PPEditor:
             video={'title':title,'track-ref':'','type':'video','location':location,'omx-audio':''}
             self.new_track(video)
         else:
-            self.mon.log(self,ext + " - type not recognised")
+            self.mon.err(self,afile + " - file extension not recognised")
 
  
 # *************************************
@@ -808,7 +808,7 @@ class Options:
         config=ConfigParser.ConfigParser()
         config.add_section('config')
         config.set('config','home','/home/pi/pp_home')
-        config.set('config','media','/home/pi/pp_home')
+        config.set('config','media','/home/pi')
         with open(self.options_file, 'wb') as config_file:
             config.write(config_file)
 
@@ -1000,6 +1000,6 @@ class EditItemDialog(tkSimpleDialog.Dialog):
 
 
 if __name__ == "__main__":
-    datestring=" 2 Jan 2013"
+    datestring=" 3 Jan 2013"
     editor = PPEditor()
 

@@ -27,29 +27,95 @@ Installation
 
 The full manual is in the file manual.pdf. To download Pi Presents including the manual and get going follow the instructions below.
 
-*   Install required applications (PIL and X Server utils) as described in the install_instructions.txt file.
+Install required applications (PIL and X Server utils)
+------------------------------------------------------
 
-*   Download and install p-expect as specified here http://www.noah.org/wiki/pexpect#Download_and_Installation  and in the install_instructions.txt file.
+         sudo apt-get update
+         sudo apt-get install python-imaging
+         sudo apt-get install python-imaging-tk
+         sudo apt-get install x11-xserver-utils
 
-*   Download Pi Presents from the pipresents github repository as described in the install_instructions.txt file.
+	   
+Download and install pexpect
+-----------------------------
 
-*   Now run Pi Presents  to check the installation is successful. From a terminal window opened in the pipresents directory type:
+Specified here http://www.noah.org/wiki/pexpect#Download_and_Installation and below.
 
-          python pipresents.py
+From a terminal window open in your home directory type:
 
-    You will see a welcome message followed by an error message which is because you have no profiles. Exit Pi Presents using CTRL-BREAK or close the window.
+         wget http://pexpect.sourceforge.net/pexpect-2.3.tar.gz
+         tar xzf pexpect-2.3.tar.gz
+         cd pexpect-2.3
+         sudo python ./setup.py install
 
-*   Now download and try some examples as described in the manual.
+	   
+Download Pi Presents
+--------------------
 
+From a terminal window open in your home directory type:
+
+         wget https://github.com/KenT2/pipresents/tarball/master -O - | tar xz
+
+There should now be a directory 'KenT2-pipresents-xxxx' in your home directory. Rename the directory to pipresents
+
+Run Pi Presents to check the installation is successful. From a terminal window opened in the pipresents directory type:
+
+         python /home/pi/pipresents/pipresents.py
+
+You will see a welcome message followed by an error message which is because you have no profiles. Exit Pi Presents using CTRL-BREAK or close the window.
+
+
+Download and try an Example Profile
+-----------------------------------
+
+Warning: The download includes a 26MB video file.
+
+Open a terminal window in your home directory and type:
+
+         wget https://github.com/KenT2/pipresents-examples/tarball/master -O - | tar xz
+
+There should now be a directory 'KenT2-pipresents-examples-xxxx' in your home directory. Open the directory and move the 'pp_home' directory  and its contents to your home directory.
+
+From the terminal type:
+
+         python /home/pi/pipresents.pipresents.py -p pp_mediashow
+		 
+to see a repeating multimedia show.
+
+Now read the manual to try other examples.
 
 Reading the Manual
 ==================
 
-The manual is issued as a PDF because it was too large and unwieldy to be a text file. Raspbian has a pdf reader; however there are a couple of issues with this:
-
-*	The currently installed pdf reader mupdf is somewhat limited. Install xpdf using
+The manual in the pipresents directory is issued as a PDF because it was too large and unwieldy to be a text file. Raspbian has a pdf reader, mupdf, however it is somewhat limited. Raspbian will soon have the better xpdf installed as default but if its not with you yet:
 
          sudo apt-get install xpdf
+		 
 
-*   You cannot cut and paste from xpdf. I have therefore provided a text file install_instructions.txt with the necessary information..
+Updating Pi Presents
+=====================
+
+Open a terminal window in your home directory and type:
+
+         wget https://github.com/KenT2/pipresents/tarball/master -O - | tar xz
+
+There should now be a directory 'KenT2-pipresents-xxxx' in your home direcotry
+
+Rename the existing pipresents directory to old-pipresents
+
+Rename the new directory to pipresents
+
+Copy pp_editor.cfg fromm the old to ne directories.
+
+		 
+Requirements
+============
+Pi Presents was developed on Raspbian using Python 2.7. It will run on a Rev.1 or Rev.2 Pi. On 256MB machines display of large images (.jpg etc.) will run out of RAM and crash the Pi. I don't know the exact maximum but keep images in the 1 Megapixel range maximum. Larger images, greater than the screen pixel size, will do nothing to improve the picture and will take longer to display.
+
+
+Bug Reports and Feature Requests
+================================
+I am keen to develop Pi Presents further and would welcome bug reports and ideas for real world additional features and uses. 
+
+Please use the Issues tab on Github https://github.com/KenT2/pipresents/issues or the Pi Presents thread in the tbd sub-forum on the Raspberry Pi forum.
 
