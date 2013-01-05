@@ -20,7 +20,7 @@ There are potentially many applications of Pi Presents and your input on real wo
 Licence
 =======
 
-See the licence.txt file. Pi Presents is giftware to help support a small museum of which I am a Trustee and who are busy building a larger premises https://www.facebook.com/MuseumOfTechnologyTheGreatWarWw11. Particularly if you are using Pi Presents in a profit making situation a small donation would be appreciated.
+See the licence.txt file. Pi Presents is giftware to help support a small museum of which I am a Trustee and who are busy building themselves a larger premises https://www.facebook.com/MuseumOfTechnologyTheGreatWarWw11. Particularly if you are using Pi Presents in a profit making situation a donation would be appreciated.
 
 Installation
 ============
@@ -58,7 +58,7 @@ From a terminal window open in your home directory type:
 
 There should now be a directory 'KenT2-pipresents-xxxx' in your home directory. Rename the directory to pipresents
 
-Run Pi Presents to check the installation is successful. From a terminal window opened in the pipresents directory type:
+Run Pi Presents to check the installation is successful. From a terminal window opened in the home directory type:
 
          python /home/pi/pipresents/pipresents.py
 
@@ -74,11 +74,11 @@ Open a terminal window in your home directory and type:
 
          wget https://github.com/KenT2/pipresents-examples/tarball/master -O - | tar xz
 
-There should now be a directory 'KenT2-pipresents-examples-xxxx' in your home directory. Open the directory and move the 'pp_home' directory  and its contents to your home directory.
+There should now be a directory 'KenT2-pipresents-examples-xxxx' in your home directory. Open the directory and move the 'pp_home' directory and its contents to your home directory.
 
-From the terminal type:
+From the terminal window type:
 
-         python /home/pi/pipresents.pipresents.py -p pp_mediashow
+         python /home/pi/pipresents/pipresents.py -p pp_mediashow
 		 
 to see a repeating multimedia show.
 
@@ -99,18 +99,22 @@ Open a terminal window in your home directory and type:
 
          wget https://github.com/KenT2/pipresents/tarball/master -O - | tar xz
 
-There should now be a directory 'KenT2-pipresents-xxxx' in your home direcotry
+There should now be a directory 'KenT2-pipresents-xxxx' in your home directory
 
 Rename the existing pipresents directory to old-pipresents
 
 Rename the new directory to pipresents
 
-Copy pp_editor.cfg fromm the old to ne directories.
+Copy pp_editor.cfg from the old to new directories.
 
 		 
 Requirements
 ============
-Pi Presents was developed on Raspbian using Python 2.7. It will run on a Rev.1 or Rev.2 Pi. On 256MB machines display of large images (.jpg etc.) will run out of RAM and crash the Pi. I don't know the exact maximum but keep images in the 1 Megapixel range maximum. Larger images, greater than the screen pixel size, will do nothing to improve the picture and will take longer to display.
+Pi Presents was developed on Raspbian using Python 2.7. It will run on a Rev.1 or Rev.2 Pi. On 256MB machines display of large images (.jpg etc.) will run out of RAM and crash the Pi.
+
+I don't know the exact maximum but keep images in the 1 Megapixel range. Larger images, greater than the screen pixel size, will do nothing to improve the picture and will take longer to display even on 512MB machines.
+
+omxplayer plays some videos using 64MB of RAM; others need 128MB, especially if you want sub-titles. 
 
 
 Bug Reports and Feature Requests
