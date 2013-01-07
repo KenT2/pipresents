@@ -186,13 +186,12 @@ class MenuShow:
         if self.shower<>None:
             self.mon.log(self,"sent kill to shower")
             self.shower.kill()
+        elif self.player<>None:
+            self.mon.log(self,"sent kill to player")
+            self.player.kill()
         else:
-            if self.player<>None:
-                self.mon.log(self,"sent kill to player")
-                self.player.kill()
-        if self.menu_timeout_running<>None:
-                self.canvas.after_cancel(self.menu_timeout_running)
-                self.menu_timeout_running=None
+            self._end("killed")
+
 
 
 # *********************

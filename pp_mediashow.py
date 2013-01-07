@@ -164,11 +164,11 @@ class MediaShow:
         if self.shower<>None:
             self.mon.log(self,"sent kill to shower")
             self.shower.kill()
-
+        elif self.player<>None:
+            self.mon.log(self,"sent kill to player")
+            self.player.kill()
         else:
-            if self.player<>None:
-                self.mon.log(self,"sent kill to player")
-                self.player.kill()
+            self._end("killed")
 
 
  
@@ -414,7 +414,11 @@ class MediaShow:
             self.player.play(content,self._display_message_end,None)
 
     def   _display_message_end(self,message):
-        self._display_message_callback()
+        self.player=None
+        if message=="killed":
+            self._end(message)
+        else:
+            self._display_message_callback()
 
 
     def complete_path(self,selected_track):
