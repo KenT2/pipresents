@@ -123,7 +123,7 @@ class PiPresents:
             call(["xset","s", "-dpms"])
 
         # control display of window decorations
-        if self.options['fullscreen']<>"":
+        if self.options['fullscreen']<>"partial":
             self.root = Tk(className="fspipresents")
         else:
               self.root = Tk(className="pipresents")          
@@ -198,7 +198,8 @@ class PiPresents:
 # ****************************************
 # INITIALISE THE APPLICATION AND START
 # ****************************************
-
+        self.shutdown_required=False
+        
         #kick off GPIO if enabled by command line option
         if self.options['gpio']==True:
             from pp_buttons import Buttons
@@ -269,21 +270,17 @@ class PiPresents:
 
     def on_kill_callback(self):
         self.tidy_up()
-        exit()
+        if self.shutdown_required==True:
+            call(['sudo', 'shutdown', '-h', '-t 5','now'])
+        else:
+            exit()
+
  
     def on_error(self):
         self.mon.log(self, "exiting because of error")
         self.tidy_up()
         exit()
 
-    # bit naughty as it short circuits the normal kill procedure
-    def on_shutdown(self):
-        if self.buttons.is_pressed(self.Buttons.SHUTDOWN):
-            self.tidy_up()
-            call(['sudo', 'shutdown', '-h', '-t 5','now'])
-            exit()
-        else:
-            return
 
 
 # *********************
@@ -291,7 +288,12 @@ class PiPresents:
 # ********************
 
     def shutdown_pressed(self):
-        self.root.after(5000,self.on_shutdown)
+        self.root.after(5000,self.on_shutdown_delay)
+
+    def on_shutdown_delay(self):
+        if self.buttons.is_pressed(self.Buttons.SHUTDOWN):
+            self.shutdown_required=True
+            self.on_break_key()
 
     def button_pressed(self,index,button,edge):
         self.mon.log(self, "Button Pressed: "+button)

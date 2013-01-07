@@ -20,7 +20,7 @@ There are potentially many applications of Pi Presents and your input on real wo
 Licence
 =======
 
-See the licence.txt file. Pi Presents is Careware to help support a small museum of which I am a Trustee and who are busy building themselves a larger premises https://www.facebook.com/MuseumOfTechnologyTheGreatWarWw11. Particularly if you are using Pi Presents in a profit making situation a donation would be appreciated.
+See the licence.md file. Pi Presents is Careware to help support a small museum of which I am a Trustee and who are busy building themselves a larger premises https://www.facebook.com/MuseumOfTechnologyTheGreatWarWw11. Particularly if you are using Pi Presents in a profit making situation a donation would be appreciated.
 
 Installation
 ============

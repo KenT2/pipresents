@@ -98,23 +98,33 @@ class ImagePlayer:
         # and start image rendering
         self._start_front_porch()
 
+        
+    def key_pressed(self,key_name):
+        if key_name=='':
+            return
+        elif key_name in ('p'):
+            return
+        elif key_name=='escape':
+            self._stop()
+            return
 
-    def key_pressed(self,k def                   starting_callback=None,
-                    playing_callback=None,
-                    ending_callback=None):
-                        
-        self.s.start()
-        # instantiate arguments
-        self.track=track
-        self.enable_menu=enable_menu
-        self.ready_callback=ready_callback
-        self.end_callback=end_callback
+    def button_pressed(self,button,edge):
+        if button =='pause':
+            return
+        elif button=='stop':
+            self._stop()
+            return
 
-        #init state and signals
-        self.state=ImagePlayer.NO_SLIDE
-        self.quit_signal=False
-        self.kill_required_signal=False
-        sel _stop(self):
+    def kill(self):
+        self.kill_required_signal=True
+        self.quit_signal=True
+
+        
+# *******************
+# internal functions
+# *******************
+
+    def _stop(self):
         self.quit_signal=True
   
      #called when back porch has completed or quit signal is received
