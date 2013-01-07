@@ -1000,6 +1000,6 @@ class EditItemDialog(tkSimpleDialog.Dialog):
 
 
 if __name__ == "__main__":
-    datestring=" 3 Jan 2013"
+    datestring=" 7 Jan 2013"
     editor = PPEditor()
 

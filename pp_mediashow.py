@@ -162,11 +162,15 @@ class MediaShow:
 
     def kill(self):
         if self.shower<>None:
+            self.mon.log(self,"sent kill to shower")
             self.shower.kill()
+
         else:
             if self.player<>None:
+                self.mon.log(self,"sent kill to player")
                 self.player.kill()
-        self._tidy_up()
+
+
  
     def _tidy_up(self):
         if self._poll_for_continue_timer<>None:
@@ -521,14 +525,18 @@ class MediaShow:
     def end_player(self,message):
         self.mon.log(self,"Returned from player with message: "+ message)
         self.player=None
-        if self.show['progress']=="manual":
+        if message=="killed":
+            self._end(message)
+        elif self.show['progress']=="manual":
             self._display_eggtimer("Stopping..")
         self._do_playing()
 
     def end_shower(self,message):
         self.mon.log(self,"Returned from shower with message: "+ message)
         self.shower=None
-        if self.show['progress']=="manual":
+        if message=="killed":
+            self._end(message)
+        elif self.show['progress']=="manual":
             self._display_eggtimer("Stopping..")
         self._do_playing()  
         

@@ -118,11 +118,12 @@ class PiPresents:
 
         #turn off the screenblanking and saver
         if self.options['noblank']==True:
+            print "blank off"
             call(["xset","s", "off"])
             call(["xset","s", "-dpms"])
 
         # control display of window decorations
-        if self.options['fullscreen']==True:
+        if self.options['fullscreen']<>"":
             self.root = Tk(className="fspipresents")
         else:
               self.root = Tk(className="pipresents")          
@@ -142,7 +143,7 @@ class PiPresents:
         self.window_width=self.screen_width
         self.window_x=0
         self.window_y=0
-        if self.options['fullscreen']<>"":
+        if self.options['fullscreen']<>"partial":
             bar=self.options['fullscreen']
             # allow just 2 pixels for the hidden taskbar
             if bar in ('left','right'):
@@ -156,8 +157,9 @@ class PiPresents:
             self.root.geometry("%dx%d%+d%+d"  % (self.window_width,self.window_height,self.window_x,self.window_y))
             self.root.attributes('-zoomed','1')
         else:
-            self.window_width=self.screen_width-100
-            self.window_height=self.screen_height-100
+            self.window_width=self.screen_width-200
+            self.window_height=self.screen_height-200
+            self.window_x=50
             self.root.geometry("%dx%d%+d%+d" % (self.window_width,self.window_height,self.window_x,self.window_y))
 
         
@@ -169,10 +171,10 @@ class PiPresents:
         self.root.focus_set()
 
         #define response to main window closing.
-        self.root.protocol ("WM_DELETE_WINDOW", self.on_close_button)
+        self.root.protocol ("WM_DELETE_WINDOW", self.on_break_key)
 
         # Always use CTRL-Break key to close the program as a get out of jail
-        self.root.bind("<Break>",self.on_break_key)
+        self.root.bind("<Break>",self.e_on_break_key)
         
         #pass all other keys along to 'shows' and hence to 'players'
         self.root.bind("<Escape>", self._escape_pressed)
@@ -243,8 +245,13 @@ class PiPresents:
     def _on_show_end(self,message):
         self.mon.log(self,"Show ended with message: " + message)
         self.show=None
-        self.on_error()
-        # !!!!!!!!!!
+        if message=="killed":
+            self.mon.log(self,"kill received - exiting")
+            self.on_kill_callback()
+        else:
+            # should never be here
+            self.on_error()
+
 
 # *********************
 # EXIT APP
@@ -255,30 +262,21 @@ class PiPresents:
         if self.options['noblank']==True:
             call(["xset","s", "on"])
             call(["xset","s", "+dpms"])
-        #terminate any running shows and players     
-        if self.show<>None:
-            self.show.kill()
         if self.options['gpio']==True:
             self.buttons.kill()
         #close logging files 
         self.mon.finish()
 
-    def on_break_key(self,event):
-        self.mon.log(self, "quit received from CTRL-break")
+    def on_kill_callback(self):
         self.tidy_up()
         exit()
  
-    def on_close_button(self):
-        self.mon.log(self, "quit received from Close Button")
-        self.tidy_up()
-        exit()
-    
     def on_error(self):
         self.mon.log(self, "exiting because of error")
         self.tidy_up()
         exit()
 
-
+    # bit naughty as it short circuits the normal kill procedure
     def on_shutdown(self):
         if self.buttons.is_pressed(self.Buttons.SHUTDOWN):
             self.tidy_up()
@@ -320,8 +318,15 @@ class PiPresents:
         if self.show<>None:
             self.show.key_pressed(key_name)
          
-            
-
+    def on_break_key(self):
+        self.mon.log(self, "kill received from user")
+        #terminate any running shows and players     
+        if self.show<>None:
+            self.mon.log(self,"kill sent to show")   
+            self.show.kill()
+    
+    def e_on_break_key(self,event):
+        self.on_break_key()
 
 if __name__ == '__main__':
 

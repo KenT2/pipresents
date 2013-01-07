@@ -83,6 +83,7 @@ class ImagePlayer:
         #init state and signals
         self.state=ImagePlayer.NO_SLIDE
         self.quit_signal=False
+        self.kill_required_signal=False
         self._tick_timer=None
         self.drawn=None
 
@@ -98,45 +99,39 @@ class ImagePlayer:
         self._start_front_porch()
 
 
-    def key_pressed(self,key_name):
-        if key_name=='':
-            return
-        elif key_name in ('p'):
-            return
-        elif key_name=='escape':
-            self._stop()
-            return
+    def key_pressed(self,k def                   starting_callback=None,
+                    playing_callback=None,
+                    ending_callback=None):
+                        
+        self.s.start()
+        # instantiate arguments
+        self.track=track
+        self.enable_menu=enable_menu
+        self.ready_callback=ready_callback
+        self.end_callback=end_callback
 
-    def button_pressed(self,button,edge):
-        if button =='pause':
-            return
-        elif button=='stop':
-            self._stop()
-            return
-
-    def kill(self):
-        if self._tick_timer<>None:
-            self.canvas.after_cancel(self._tick_timer)
-            self._tick_timer=None
-
-
-    
-# *******************
-# internal functions
-# *******************
-
-
-    def _stop(self):
+        #init state and signals
+        self.state=ImagePlayer.NO_SLIDE
+        self.quit_signal=False
+        self.kill_required_signal=False
+        sel _stop(self):
         self.quit_signal=True
   
      #called when back porch has completed or quit signal is received
     def _end(self):
+        if self._tick_timer<>None:
+            self.canvas.after_cancel(self._tick_timer)
+            self._tick_timer=None
         self.quit_signal=False
         self.canvas.delete(ALL)
         self.canvas.update_idletasks( )
         self.state=self.NO_SLIDE
-        self.end_callback("ImagePlayer ended")
-        self=None
+        if self.kill_required_signal==True:
+            self.end_callback("killed")
+            self=None           
+        else:
+            self.end_callback("ImagePlayer ended")
+            self=None
 
 
     def _start_front_porch(self):

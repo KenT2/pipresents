@@ -4,9 +4,9 @@ def command_options():
     """ reads the command line options and returns a dictionary of them"""
     parser = argparse.ArgumentParser(description = 'Pi presents presentation package')
     parser.add_argument( '-b','--noblank', 
-                                          action='store_false',
+                                          action='store_true',
                                           help='Disable screen blanking.')
-    parser.add_argument( '-f','--fullscreen', nargs='?', default='', const='',
+    parser.add_argument( '-f','--fullscreen', nargs='?', default='partial', const='',choices=['partial','left','right','top','bottom'],
                                           help='Full screen, <top,bottom,left,right>')
     parser.add_argument( '-g','--gpio', 
                                           action='store_true',

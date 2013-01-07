@@ -7,29 +7,27 @@ from time import sleep
 from pp_utils import Monitor
 
 """
-6/11/2012 initial issue
-changed omxplayer to omxdriver
-bug - constants now referred to by class name
-
  pyomxplayer from https://github.com/jbaiter/pyomxplayer
  extensively modified by KenT
 
- omxplayer hides the detail of using the omxplayer command from python from application layers
- Its easy to end up with many copies of omxplayer running if this class is not used with care. use pp_videoplayer.py for a safer interface.
- I found overlapping prepare and show did nor completely reduce the gap, sometimes in a test of this one of my videos ran very fast when it was the second video 
+ omxdriver hides the detail of using the omxplayer command  from videoplayer
+ This is meant to be used with videoplayer.py
+ Its easy to end up with many copies of omxplayer.bin running if this class is not used with care. use pp_videoplayer.py for a safer interface.
+ I found overlapping prepare and show did nor completely reduce the gap between tracks, sometimes in a test of this one of my videos ran very fast when it was the second video 
 
  External commands
  ----------------------------
  __init__ just creates the instance and initialises variables (e.g. omx=OMXPlayer())
  play -  plays a track
- pause  - pauses a track if not already paused.
- resume - resumes a track if paused.
+ pause  - toggles pause
  control  - sends controls to omxplayer.bin  while track is playing (use stop and pause instead of q and p)
- stop - stops a video that is playing
+ stop - stops a video that is playing.
+ kill - Sets kill required signal and stops a video playing. Used when aborting an application.
+ 
  Advanced:
  prepare  - processes the track up to where it is ready to display, at this time it pauses.
  show  - plays the video from where 'prepare' left off by resuming from the pause.
- kill - ensures the subprocess (omxplayer.bin) is destroyed. use when exiting the application to tidy up.
+
 
 Signals
 ----------
@@ -80,14 +78,21 @@ class OMXDriver(object):
 
     # kill the subprocess (omxplayer.bin). Used for tidy up on exit.
     def kill(self):
-        try:
-            self._process
-        except AttributeError:
-            return
-        else:
-            self._process.send('q')
-            self._process.terminate(force=True)
-
+        self.kill_required_signal=True
+        self._process.send('q')
+        
+        
+        #try:
+            #self._process
+        #except AttributeError:
+            #return
+        #else:
+            #self._process.send('q')
+            #terminated=self._process.terminate(force=True)
+            #if terminated==True:
+                #self.mon.log(self,"killed omxplayer sub-process")
+            #else:
+                #self.mon.err(self,"FAILED to kill omxplayer sub-process")
 
    # test of whether _process is running
     def is_running(self):
@@ -101,6 +106,8 @@ class OMXDriver(object):
         self.paused=False
         self.start_play_signal = False
         self.end_play_signal=False
+        self.kill_required_signal=False
+        self.killed=False
         track= "'"+ track.replace("'","'\\''") + "'"
         cmd = OMXDriver._LAUNCH_CMD + options +" " + track
         self.mon.log(self, "Send command to omxplayer: "+ cmd)

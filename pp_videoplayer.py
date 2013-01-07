@@ -1,18 +1,3 @@
-"""
-Issue Date 6 Nov 2012
-omx-audio, now expects local or hdmi not -o .....
-changed OMXPlayer to OMXDriver
-bug - pause/resume gets out of sync. kill the instance at end of track with self=None when ending
-      - must now create an instance of VideoPlayer for each play of a track
-changed pause to a toggle operation
-changed test harness into a class.
-added button_pressed, possibly key_pressed
-key pressed is now passed name of key rather than event.
-removed sending other controls to driver from key_pressed
-don't need an external stop  function as the escape key does it.
-added a ready to play callback
-added track level configuration dictionary.
-"""
 
 import time
 
@@ -113,12 +98,10 @@ class VideoPlayer:
 
     def kill(self):
         if self.omx<>None:
+            self.mon.log(self,"sent kill to omxdriver")
             self.omx.kill()
-        if self._tick_timer<>None:
-            self.canvas.after_cancel(self._tick_timer)
-            self._tick_timer=None
 
-
+        
 # ***************************************
 # EXTERNAL COMMANDS
 # ***************************************
@@ -223,9 +206,18 @@ class VideoPlayer:
             if self.omx.is_running() ==False:
                 self.mon.log(self,"            <omx process is dead")
                 self.play_state = VideoPlayer._CLOSED
-                if self.end_callback<>None:
-                    self.end_callback("track has terminated")
-                self=None
+                if self._tick_timer<>None:
+                    self.canvas.after_cancel(self._tick_timer)
+                    self._tick_timer=None
+                if self.omx.kill_required_signal==True:
+                    self.kill_required_signal=False
+                    if self.end_callback<>None:
+                        self.end_callback("killed")
+                    self=None
+                else:
+                    if self.end_callback<>None:
+                        self.end_callback("track has terminated")
+                    self=None
             else:
                 self._tick_timer=self.canvas.after(200, self._play_state_machine)
 

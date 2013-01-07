@@ -58,6 +58,7 @@ class MessagePlayer:
         self.end_callback=end_callback
         #init state and signals
         self.quit_signal=False
+        self.kill_required_signal=False
         self._tick_timer=None
         self.drawn=None
 
@@ -85,9 +86,8 @@ class MessagePlayer:
 
 
     def kill(self):
-        if self._tick_timer<>None:
-            self.canvas.after_cancel(self._tick_timer)
-            self._tick_timer=None
+        self.kill_required_signal=True
+        self.quit_signal=True
 
     
 # *******************
@@ -100,11 +100,18 @@ class MessagePlayer:
   
      #called when dwell has completed or quit signal is received
     def _end(self):
+        if self._tick_timer<>None:
+            self.canvas.after_cancel(self._tick_timer)
+            self._tick_timer=None
         self.quit_signal=False
         self.canvas.delete(ALL)
         self.canvas.update_idletasks( )
-        self.end_callback("MessagePlayer ended")
-        self=None
+        if self.kill_required_signal==True:
+            self.end_callback("killed")
+            self=None
+        else:
+            self.end_callback("MessagePlayer ended")
+            self=None
 
 
     def _start_dwell(self):
