@@ -180,8 +180,6 @@ class PiPresents:
         self.root.bind("<Escape>", self._escape_pressed)
         self.root.bind("<Up>", self._up_pressed)
         self.root.bind("<Down>", self._down_pressed)
-        self.root.bind("<Left>", self._left_pressed)
-        self.root.bind("<Right>", self._right_pressed)
         self.root.bind("<Return>", self._return_pressed)
         self.root.bind("<space>", self._pause_pressed)
         self.root.bind("p", self._pause_pressed)
@@ -307,16 +305,13 @@ class PiPresents:
     def _escape_pressed(self,event): self._key_pressed("escape")              
     def _up_pressed(self,event): self._key_pressed("up")  
     def _down_pressed(self,event): self._key_pressed("down")  
-    def _left_pressed(self,event): self._key_pressed("left")  
-    def _right_pressed(self,event): self._key_pressed("right")  
     def _return_pressed(self,event): self._key_pressed("return")
     def _pause_pressed(self,event): self._key_pressed("p")
         
 
     def _key_pressed(self,key_name):
         self.mon.log(self, "Key Pressed: "+ key_name)
-
-        #if a show is running pass the key to it.
+        # if a show is running pass the key to it.
         if self.show<>None:
             self.show.key_pressed(key_name)
          

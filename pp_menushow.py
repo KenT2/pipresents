@@ -128,7 +128,8 @@ class MenuShow:
             pass
         
         elif key_name=='escape':
-            # if next lower show eor player is running pass down ELSE stop this show if not at top
+            # if next lower show eor player is running pass down to stop bottom level
+            # ELSE stop this show if not at top
             if self.shower<>None:
                 self.shower.key_pressed(key_name)
             elif self.player<>None:
@@ -140,13 +141,8 @@ class MenuShow:
                 else:
                     pass
       
-        elif key_name in ('left','right'):
-        # if child running and is a show pass down else ignore
-            if self.shower<>None:
-                self.shower.key_pressed(key_name)
-
         elif key_name in ('up','down'):
-        # if child running and is a show pass down
+        # if child or sub-show running and is a show pass down
         # if  child not running - move
             if self.shower<>None:
                 self.shower.key_pressed(key_name)
@@ -159,8 +155,7 @@ class MenuShow:
                 
         elif key_name=='return':
             # if child running and is show - pass down
-            # if child is running and is track - ignore
-            # if no child running  - play
+            # if no track already running  - play
             if self.shower<>None:
                 self.shower.key_pressed(key_name)
             else:

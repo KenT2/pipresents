@@ -99,7 +99,8 @@ class MediaShow:
             pass
         
         elif key_name=='escape':
-            # if next lower show eor player is running pass down ELSE stop this show except for exceptions
+            # if next lower show eor player is running pass down to stop the show/track
+            # ELSE stop this show except for exceptions
             if self.shower<>None:
                 self.shower.key_pressed(key_name)
             elif self.player<>None:
@@ -113,28 +114,21 @@ class MediaShow:
                     self._stop("exit show to higher level")
                 else:
                     pass
-      
+    
         elif key_name in ('up','down'):
-        # if child running and is a show pass down else ignore
+        # if child or sub-show is running and is a show pas to show, track does not use up/down
+        # if  otherwise use keys for next or previous
             if self.shower<>None:
                 self.shower.key_pressed(key_name)
-
-        elif key_name in ('left','right'):
-        # if child running and is a show stop the show
-        # if child running and track  - stop track , set next signal .....move,play
-        # if  child not running - move (needs poll for signal)
-            #if self.shower<>None:
-                #self.shower.key_pressed(key_name)
-            #else:
-            if key_name=='left':
-                self._previous()
             else:
-                self._next()
+                if key_name=='down':
+                    self._previous()
+                else:
+                    self._next()
                 
         elif key_name=='return':
-            # if child running and is show - pass down
-            # if child is running ad is track - stop track, signal play_child
-            # if no child running just signal
+            # if child show or sub-show is running and is show - pass down
+            # ELSE use Return to start child or to trigger a presentation or exhibit
             if self.shower<>None:
                 self.shower.key_pressed(key_name)
             else:
@@ -153,8 +147,8 @@ class MediaShow:
 
     def button_pressed(self,button,edge):
         if button=='play': self.key_pressed("return")
-        elif  button =='up': self.key_pressed("right")
-        elif button=='down': self.key_pressed("left")
+        elif  button =='up': self.key_pressed("up")
+        elif button=='down': self.key_pressed("down")
         elif button=='stop': self.key_pressed("escape")
         elif button=='pause': self.key_pressed('p')
         elif button=='PIR': self.key_pressed('return')
