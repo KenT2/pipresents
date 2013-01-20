@@ -14,7 +14,3 @@ Other minor improvements
 
 Version 1.0 - 8/1/2013
 First Issue
-
-
-Version in About for editor.
-editor config?

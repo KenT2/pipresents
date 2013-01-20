@@ -3,10 +3,9 @@
 """
 Part of Pi Presents
 Pi presents is a presentation package, running on the Raspberry Pi, for museum exhibits, galleries, and presentations.
-Copyright 2012, Ken Thompson
-Licence:
+Copyright 2012/2013, Ken Thompson
 
-See manual.txt for instructions.
+See manual.pdf for instructions.
 """
 import os
 import sys
@@ -176,7 +175,7 @@ class PiPresents:
             self.window_x=50
             self.root.geometry("%dx%d%+d%+d" % (self.window_width,self.window_height,self.window_x,self.window_y))
 
-        print self.window_x,self.window_y,self.window_width,self.window_height
+
 
         
         #canvas covers the whole window
@@ -202,7 +201,7 @@ class PiPresents:
 
         #setup a canvas onto which will be drawn the images or text
         self.canvas = Canvas(self.root, bg='black')
-        print self.canvas_width,self.canvas_height
+
         self.canvas.config(height=self.canvas_height, width=self.canvas_width)
         #self.canvas.grid(row=1,columnspan=2)
         self.canvas.pack()
