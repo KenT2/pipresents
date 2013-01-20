@@ -2,6 +2,7 @@ from glob import glob
 import os
 import csv
 import json
+import copy
 
 # *************************************
 # MEDIALIST CLASS
@@ -35,8 +36,12 @@ class MediaList:
 
     def append(self, track_dict):
         """appends a track dictionary to the end of the medialist store"""
-        self._tracks.append(track_dict)
+        self._tracks.append(copy.deepcopy(track_dict))
         self._num_tracks+=1
+
+    def update(self,index,values):
+        self._tracks[index].update(values)
+
 
     def remove(self,index):
         self._tracks.pop(index)
@@ -199,29 +204,34 @@ class MediaList:
         return -1
 
 
-
-
-    def open_list(self,filename):
+    def open_list(self,filename,showlist_issue):
         """
         opens a saved medialist
         medialists are stored as json arrays.
         """
-        if filename !="" and os.path.exists(filename):
-            ifile  = open(filename, 'rb')
-            self._tracks = json.load(ifile)['tracks']
-            ifile.close()
+        ifile  = open(filename, 'rb')
+        mdict = json.load(ifile)
+        ifile.close()
+        self._tracks = mdict['tracks']
+        if 'issue' in mdict:
+            self.issue= mdict['issue']
+        else:
+            self.issue="1.0"
+        if self.issue==showlist_issue:
             self._num_tracks=len(self._tracks)
             self._selected_track_index=-1
             return True
         else:
             return False
 
+    def issue(self):
+        return self.issue
 
     def save_list(self,filename):
         """ save a medialist """
         if filename=="":
             return False
-        dic={'tracks':self._tracks}
+        dic={'issue':self.issue,'tracks':self._tracks}
         ofile  = open(filename, "wb")
         json.dump(dic,ofile,sort_keys=True,indent=1)
         return
@@ -239,7 +249,7 @@ class MediaList:
             for pl_row in pl:
                 if len(pl_row) != 0:
                     entry=dict([('type',pl_row[2]),('location',pl_row[0]),('title',pl_row[1])])
-                    self.append(entry)
+                    self.append(copy.deepcopy(entry))
             ifile.close()
             return True
         else:

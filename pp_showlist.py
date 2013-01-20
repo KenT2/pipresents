@@ -1,6 +1,7 @@
 from glob import glob
 import os
 import csv
+import copy
 import json
 import ConfigParser
 from pp_utils import Monitor
@@ -21,7 +22,6 @@ class ShowList:
         self.mon=Monitor()
         self.mon.on()
         self.clear()
- 
 
     def clear(self):
         self._shows = []  #MediaList, stored as a list of dicts
@@ -54,7 +54,10 @@ class ShowList:
             
     def selected_show_index(self):
         return self._selected_show_index
-
+        
+    def shows(self):
+        return self._shows
+        
     def show(self,index):
         return self._shows[index]
     
@@ -64,7 +67,7 @@ class ShowList:
 
     def append(self, show_dict):
         """appends a show dictionary to the end of the showlist store"""
-        self._shows.append(show_dict)
+        self._shows.append(copy.deepcopy(show_dict))
         self._num_shows+=1
 
     def remove(self,index):
@@ -111,7 +114,43 @@ class ShowList:
         self._selected_show_index=index
         self._selected_show=self._shows[index]
 
+        
+    def open_json(self,filename):
+        """
+        opens a saved showlistlist
+        showlists are stored in files as json arrays within a object 'shows'.
+        shows are stored internally as a list of dictionaries in self._shows
+        """
+        if filename !="" and os.path.exists(filename):
+            ifile  = open(filename, 'rb')
+            sdict= json.load(ifile)
+            ifile.close()
+            self._shows=sdict['shows']
+            if 'issue' in sdict:
+                self.issue= sdict['issue']
+            else:
+                self.issue="1.0"
+            self._num_shows=len(self._shows)
+            self._selected_show_index=-1
+            return True
+        else:
+            return False
 
+    def sissue(self):
+        return self.issue
+        
+            
+    def save_list(self,filename):
+        """ save a showlist """
+        if filename=="":
+            return False
+        dic={'issue':self.issue,'shows':self._shows}
+        ofile  = open(filename, "wb")
+        json.dump(dic,ofile,sort_keys=True,indent=1)
+        return
+            
+# =====================================================
+# old stuff
     def open_cfg(self,filename):
         """
         opens a saved showlist
@@ -129,23 +168,6 @@ class ShowList:
             return True
         else:
             return False
-        
-    def open_json(self,filename):
-        """
-        opens a saved showlistlist
-        showlists are stored in files as json arrays within a object 'shows'.
-        shows are stored internally as a list of dictionaries in self._shows
-        """
-        if filename !="" and os.path.exists(filename):
-            ifile  = open(filename, 'rb')
-            self._shows = json.load(ifile)['shows']
-            ifile.close()
-            self._num_shows=len(self._shows)
-            self._selected_show_index=-1
-            return True
-        else:
-            return False
-
     def has_show(self,section):
         return self.config.has_section(section)
 
@@ -160,14 +182,6 @@ class ShowList:
 
 
 
-    def save_list(self,filename):
-        """ save a showlist """
-        if filename=="":
-            return False
-        dic={'shows':self._shows}
-        ofile  = open(filename, "wb")
-        json.dump(dic,ofile,sort_keys=True,indent=1)
-        return
 
 
 

@@ -1,5 +1,5 @@
-PI PRESENTS
-===========
+PI PRESENTS  - Version 1.1.0
+============================
 
 Pi Presents is a presentation application intended for Museums and Visitor Centres. I am involved with a couple of charity organisations that are museums or have visitor centres and have wanted a cheap way to provide audio interpretation and slide/videoshow displays. Until the Raspberry Pi arrived buying or constructing even sound players was expensive. The Pi with its combination of Linux, GPIO and a powerful GPU is ideal for black box multi-media applications; all it needs is a program to harness its power in a way that could be used by non-programmers.
 
@@ -20,7 +20,7 @@ There are potentially many applications of Pi Presents and your input on real wo
 Licence
 =======
 
-See the licence.md file. Pi Presents is Careware to help support a small museum of which I am a Trustee and who are busy building themselves a larger premises https://www.facebook.com/MuseumOfTechnologyTheGreatWarWw11. Particularly if you are using Pi Presents in a profit making situation a donation would be appreciated.
+See the licence.md file. Pi Presents is Careware to help support a small museum charity of which I am a Trustee and who are busy building themselves a larger premises https://www.facebook.com/MuseumOfTechnologyTheGreatWarWw11. Particularly if you are using Pi Presents in a profit making situation a donation would be appreciated.
 
 Installation
 ============
@@ -53,7 +53,7 @@ Return the terminal window to the home directory.
 Download Pi Presents
 --------------------
 
-From a terminal window open in your home directory type:
+Pi Presents MUST be run from the LXDE desktop. From a terminal window open in your home directory type:
 
          wget https://github.com/KenT2/pipresents/tarball/master -O - | tar xz
 
@@ -104,9 +104,11 @@ There should now be a directory 'KenT2-pipresents-xxxx' in your home directory
 
 Rename the existing pipresents directory to old-pipresents
 
-Rename the new directory to pipresents
+Rename the new directory to pipresents.
 
 Copy pp_editor.cfg from the old to new directories.
+
+The profiles in pipresents-examples will be kept compatible with the latest version of Pi Presents. Beware, re-installing these might overwrite profiles you have made. The example profiles can be updated to be compatible with the updated version of Pi Presents by running them through the editor.
 
 		 
 Requirements
@@ -122,5 +124,5 @@ Bug Reports and Feature Requests
 ================================
 I am keen to develop Pi Presents further and would welcome bug reports and ideas for real world additional features and uses. 
 
-Please use the Issues tab on Github https://github.com/KenT2/pipresents/issues or the Pi Presents thread in the tbd sub-forum on the Raspberry Pi forum.
+Please use the Issues tab on Github https://github.com/KenT2/pipresents/issues or the Pi Presents thread http://www.raspberrypi.org/phpBB3/viewtopic.php?f=38&t=29397 on the Raspberry Pi forum.
 

@@ -1,0 +1,20 @@
+
+Version 1.1.0 - 20/1/2013
+Added validation of profiles - all fields except for fonts and colours are validated.
+Added a system to check compatibiity between profiles, editor and Pi Presents. Uses first 2 digits of Version:
+   First digit - complete re-write.
+   Second digit - Incremented when profile definition has changed
+   Third digit - modifications that do not change the profile interface.
+Images can now display a text overlay - show-text and track-text
+Images can  be paused using 'space', 'p' or spacebar
+Reversed the polarity of PIR input as burglar alarm PIR's have nc connections.
+New image and message tracks now have blank durations so they inherit from show by default.
+Fixed bug in editor where add show and add track produced linked tracks.
+Other minor improvements
+
+Version 1.0 - 8/1/2013
+First Issue
+
+
+Version in About for editor.
+editor config?

@@ -11,6 +11,9 @@ def command_options():
     parser.add_argument( '-g','--gpio', 
                                           action='store_true',
                                           help='Use GPIO')
+    parser.add_argument( '-v','--verify', 
+                                          action='store_true',
+                                          help='Verify Profile')
     parser.add_argument( '-d','--debug', 
                                           action='store_true',
                                           help='Debug output to terminal window')

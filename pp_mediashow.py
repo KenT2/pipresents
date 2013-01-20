@@ -48,7 +48,17 @@ class MediaShow:
         # Init variables
         self.player=None
         self.shower=None
-
+        self._poll_for_interval_timer=None
+        self._poll_for_continue_timer=None
+        self._interval_timer=None
+        
+        self._interval_timer_signal=False
+        self._trigger_show_signal=False
+        self._restart_show_signal=False
+        self._end_mediashow_signal=False
+        self._next_track_signal=False
+        self._previous_track_signal=False
+        self._play_child_signal = False
 
 
     def play(self,end_callback,ready_callback=None, top=False):
@@ -71,22 +81,12 @@ class MediaShow:
             self.mon.err(self,"Medialist file not found: "+ self.media_file)
             self._stop("Medialist file not found")
 
+
         #create a medialist for the mediashow and read it.
         self.medialist=MediaList()
-        self.medialist.open_list(self.media_file)
-            
-        #init and kick off the mediashow
-        self._poll_for_interval_timer=None
-        self._poll_for_continue_timer=None
-        self._interval_timer=None
-        
-        self._interval_timer_signal=False
-        self._trigger_show_signal=False
-        self._restart_show_signal=False
-        self._end_mediashow_signal=False
-        self._next_track_signal=False
-        self._previous_track_signal=False
-        self._play_child_signal = False
+        if self.medialist.open_list(self.media_file,self.showlist.sissue())==False:
+            self.mon.err(self,"Version of medialist different to Pi Presents")
+            self._end("fatal error")
         
         self._start_front_porch()
 
@@ -523,7 +523,7 @@ class MediaShow:
     def end_player(self,message):
         self.mon.log(self,"Returned from player with message: "+ message)
         self.player=None
-        if message=="killed":
+        if message in ("killed","fatal error"):
             self._end(message)
         elif self.show['progress']=="manual":
             self._display_eggtimer("Stopping..")
@@ -532,7 +532,7 @@ class MediaShow:
     def end_shower(self,message):
         self.mon.log(self,"Returned from shower with message: "+ message)
         self.shower=None
-        if message=="killed":
+        if message in ("killed","fatal error"):
             self._end(message)
         elif self.show['progress']=="manual":
             self._display_eggtimer("Stopping..")

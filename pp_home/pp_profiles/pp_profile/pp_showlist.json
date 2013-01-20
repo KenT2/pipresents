@@ -1,4 +1,5 @@
 {
+ "issue": "1.1", 
  "shows": [
   {
    "show-ref": "start", 
@@ -21,6 +22,11 @@
    "repeat-interval": "", 
    "sequence": "ordered", 
    "show-ref": "mymediashow", 
+   "show-text": "", 
+   "show-text-colour": "", 
+   "show-text-font": "", 
+   "show-text-x": "0", 
+   "show-text-y": "0", 
    "title": "Mediashow", 
    "transition": "cut", 
    "trigger": "start", 

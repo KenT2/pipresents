@@ -16,6 +16,7 @@ import time
 
 from Tkinter import *
 import Tkinter as tk
+import tkMessageBox
 
 from pp_options import command_options
 from pp_showlist import ShowList
@@ -23,10 +24,13 @@ from pp_menushow import MenuShow
 from pp_mediashow import MediaShow
 from pp_utils import Monitor
 from pp_utils import StopWatch
+from pp_validate import Validator
 
 
 class PiPresents:
     def __init__(self):
+        
+        self.pipresents_issue="1.1"
         
         StopWatch.global_enable=False
 
@@ -77,9 +81,9 @@ class PiPresents:
         else:
             home = self.options['home'] + "/pp_home"
                    
-        #check if pp_home exists
-        #  falling back to an error config.
+        #check if pp_home exists.
         # try for 10 seconds to allow usb stick to automount
+        # fall back to pipresents/pp_home
         self.pp_home=pp_dir+"/pp_home"
         for i in range (1, 10):
             self.mon.log(self,"Trying pp_home at: " + home +  " " + str(i))
@@ -93,7 +97,14 @@ class PiPresents:
         self.pp_profile=self.pp_home+self.pp_profile_path
         if not os.path.exists(self.pp_profile):
             self.pp_profile=pp_dir+"/pp_home/pp_profiles/pp_profile"
-            
+
+        if self.options['verify']==True:
+            val =Validator()
+            if  val.validate_profile(None,self.pp_home,self.pp_profile,self.pipresents_issue,False) == False:
+                tkMessageBox.showwarning("Pi Presents","Validation Failed")
+                exit()
+
+        
         #initialise the showlists and read the showlists
         self.showlist=ShowList()
         self.showlist_file= self.pp_profile+ "/pp_showlist.json"
@@ -101,6 +112,10 @@ class PiPresents:
             self.showlist.open_json(self.showlist_file)
         else:
             self.mon.err(self,"showlist not found at "+self.showlist_file)
+            self.on_error()
+
+        if float(self.showlist.sissue())<>float(self.pipresents_issue):
+            self.mon.err(self,"Version of profile " + self.showlist.sissue() + " is not  same as Pi Presents, must exit")
             self.on_error()
  
         # get the starter show from the showlist
@@ -118,7 +133,6 @@ class PiPresents:
 
         #turn off the screenblanking and saver
         if self.options['noblank']==True:
-            print "blank off"
             call(["xset","s", "off"])
             call(["xset","s", "-dpms"])
 
@@ -162,6 +176,8 @@ class PiPresents:
             self.window_x=50
             self.root.geometry("%dx%d%+d%+d" % (self.window_width,self.window_height,self.window_x,self.window_y))
 
+        print self.window_x,self.window_y,self.window_width,self.window_height
+
         
         #canvas covers the whole window
         self.canvas_height=self.window_height
@@ -186,9 +202,10 @@ class PiPresents:
 
         #setup a canvas onto which will be drawn the images or text
         self.canvas = Canvas(self.root, bg='black')
+        print self.canvas_width,self.canvas_height
         self.canvas.config(height=self.canvas_height, width=self.canvas_width)
-        self.canvas.grid(row=1,columnspan=2)
-        
+        #self.canvas.grid(row=1,columnspan=2)
+        self.canvas.pack()
         # make sure focus is set on canvas.
         self.canvas.focus_set()
 
@@ -248,7 +265,7 @@ class PiPresents:
             self.mon.log(self,"kill received - exiting")
             self.on_kill_callback()
         else:
-            # should never be here
+            # should never be here or fatal error
             self.on_error()
 
 

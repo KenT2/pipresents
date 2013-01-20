@@ -45,7 +45,7 @@ class Buttons:
                                  [18,"play",2,0,False,False,True,False],
                                  [22,"pause",2,0,False,False,True,False],
                                  [7,"stop",2,0,False,False,True,False],
-                                 [11,"PIR",2,0,False,False,True,False]]
+                                 [11,"PIR",2,0,False,False,False,True]]
 
 
         GPIO.setmode(GPIO.BOARD)

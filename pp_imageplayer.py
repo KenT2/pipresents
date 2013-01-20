@@ -86,6 +86,8 @@ class ImagePlayer:
         self.kill_required_signal=False
         self._tick_timer=None
         self.drawn=None
+        self.paused=False
+        self.pause_text=None
 
         self.pil_image=PIL.Image.open(self.track)
         self.s.split("open gif file - sarename")
@@ -102,15 +104,15 @@ class ImagePlayer:
     def key_pressed(self,key_name):
         if key_name=='':
             return
-        elif key_name in ('p'):
-            return
+        elif key_name in ('p',' '):
+            self.pause()
         elif key_name=='escape':
             self._stop()
             return
 
     def button_pressed(self,button,edge):
         if button =='pause':
-            return
+            self.pause()
         elif button=='stop':
             self._stop()
             return
@@ -118,6 +120,12 @@ class ImagePlayer:
     def kill(self):
         self.kill_required_signal=True
         self.quit_signal=True
+
+    def pause(self):
+        if not self.paused:
+            self.paused = True
+        else:
+            self.paused=False
 
         
 # *******************
@@ -202,8 +210,23 @@ class ImagePlayer:
             self.mon.log(self,"quit received")
             self._end()
         else:
-            self.dwell_counter=self.dwell_counter+1
-            # print"doing slide dwell " + str(self.dwell_counter)
+            if self.paused == False:
+                self.dwell_counter=self.dwell_counter+1
+
+            # one time flipping of pause text
+            if self.paused==True and self.pause_text==None:
+                self.pause_text=self.canvas.create_text(100,100, anchor=NW,
+                                                      text="PAUSED.......",
+                                                      fill="white",
+                                                      font="arial 25 bold")
+                self.canvas.update_idletasks( )
+                
+            if self.paused==False and self.pause_text<>None:
+                    print "test to delete"
+                    self.canvas.delete(self.pause_text)
+                    self.pause_text=None
+                    self.canvas.update_idletasks( )
+
             if self.dwell_counter==self.dwell/self.tick:
                 self._start_back_porch()
             else:
@@ -286,9 +309,25 @@ class ImagePlayer:
             self.canvas.create_text(self.centre_x, int(self.canvas['height']) - int(self.cd['hint-y']),
                                                   text=self.cd['hint-text'],
                                                   fill=self.cd['hint-colour'],
-                                                  font=self.cd['hint-font'])
-            self.canvas.update_idletasks( )
+                                                font=self.cd['hint-font'])
 
+        # display show text if enabled
+        if self.cd['show-text']<> '':
+            self.canvas.create_text(int(self.cd['show-text-x']),int(self.cd['show-text-y']),
+                                                    anchor=NW,
+                                                  text=self.cd['show-text'],
+                                                  fill=self.cd['show-text-colour'],
+                                                  font=self.cd['show-text-font'])
+            
+        # display track text if enabled
+        if self.track_params['track-text']<> '':
+            self.canvas.create_text(int(self.track_params['track-text-x']),int(self.track_params['track-text-y']),
+                                                    anchor=NW,
+                                                  text=self.track_params['track-text'],
+                                                  fill=self.track_params['track-text-colour'],
+                                                  font=self.track_params['track-text-font'])
+            
+        self.canvas.update_idletasks( )
 
 # *****************
 #Test harness follows

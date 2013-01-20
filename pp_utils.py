@@ -34,11 +34,14 @@ class Monitor:
     log_path=""
     ofile=None
     start_time= time.time()
+    warnings=0
+    fatals=0
 
     def __init__(self):
         if Monitor.ofile==None:
             Monitor.ofile=open(Monitor.log_path+"/pp_log.log","w")          
         self.enable=False
+
 
     def on(self):
         self.enable=True
@@ -59,6 +62,7 @@ class Monitor:
              print "%.2f" % (time.time()-Monitor.start_time), " ",caller.__class__.__name__," ", text
              Monitor.ofile.write (caller.__class__.__name__ +": " + text+"\n")
              
+  
     def finish(self):
         Monitor.ofile.close()
         pass

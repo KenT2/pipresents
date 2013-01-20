@@ -1,4 +1,5 @@
 {
+ "issue": "1.1", 
  "shows": [
   {
    "show-ref": "start", 
@@ -23,6 +24,11 @@
    "omx-audio": "hdmi", 
    "omx-other-options": "", 
    "show-ref": "mymenu", 
+   "show-text": "", 
+   "show-text-colour": "", 
+   "show-text-font": "", 
+   "show-text-x": "0", 
+   "show-text-y": "0", 
    "timeout": "0", 
    "title": "Menu", 
    "transition": "cut", 

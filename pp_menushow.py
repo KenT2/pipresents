@@ -81,7 +81,9 @@ class MenuShow:
         
         #create a medialist for the menu and read it.
         self.medialist=MediaList()
-        self.medialist.open_list(self.menu_file)
+        if self.medialist.open_list(self.menu_file,self.showlist.sissue()) == False:
+            self.mon.err(self,"Version of medialist different to Pi Presents")
+            self._end("fatal error")
            
         if self.show['has-background']=="yes":
             background_index=self.medialist.index_of_track ('pp-menu-background')
@@ -339,7 +341,7 @@ class MenuShow:
     def _end_player(self,message):
         self.mon.log(self,"Returned from player with message: "+ message)
         self.player=None
-        if message=="killed":
+        if message in("killed","fatal error"):
             self._end(message)
         self._display_eggtimer("Stopping..")
         self._what_next(message)
@@ -347,7 +349,7 @@ class MenuShow:
     def _end_shower(self,message):
         self.mon.log(self,"Returned from shower with message: "+ message)
         self.shower=None
-        if message=="killed":
+        if message in ("killed","fatal error"):
             self._end(message)
         self._display_eggtimer("Stopping..")
         self._what_next(message)  

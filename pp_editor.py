@@ -11,11 +11,14 @@ import csv
 import os
 import ConfigParser
 import shutil
+import json
+import copy
 
 from pp_medialist import MediaList
 from pp_showlist import ShowList
 from pp_utils import Monitor
 from pp_options import ed_options
+from pp_validate import Validator
 
 #**************************
 # Pi Presents Editor Class
@@ -33,20 +36,146 @@ class PPEditor:
 
     def __init__(self):
 
+        
+        self.editor_issue="1.1"
+
+        self.show_types={'mediashow':[ 'type','title','show-ref', 'medialist','sep',
+                          'trigger','progress','sequence','repeat','repeat-interval','sep',
+                            'has-child', 'hint-text', 'hint-y','hint-font','hint-colour','sep',
+                           'show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
+                           'transition', 'duration','omx-audio','omx-other-options'],
+                         
+                        'menu':['type','title','show-ref','medialist','sep',
+                        'menu-x', 'menu-y', 'menu-spacing','timeout','has-background',
+                        'entry-font','entry-colour', 'entry-select-colour','sep',
+                      'hint-text', 'hint-y', 'hint-font', 'hint-colour','sep',
+                        'show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
+                       'transition','duration', 'omx-audio','omx-other-options'],
+                         
+                    'start':['type','title','show-ref','start-show']
+                     }
+
+        # must update show_types and new_shows
+        
+        self.new_shows={'mediashow':{'title': 'New Mediashow','show-ref':'', 'type': 'mediashow', 'medialist': '',
+                          'trigger': 'start','progress': 'auto','sequence': 'ordered','repeat': 'interval','repeat-interval': '10',
+                            'has-child': 'no', 'hint-text': '', 'hint-y': '100','hint-font': 'Helvetica 30 bold','hint-colour': 'white',
+                            'show-text':'','show-text-font':'','show-text-colour':'','show-text-x':'0','show-text-y':'0',
+                                     'transition': 'cut', 'duration': '5','omx-audio': 'hdmi','omx-other-options': ''},
+                        
+                        'menu':{'show-ref': '', 'title': 'New Menu','type': 'menu','medialist': '',
+                        'menu-x': '300', 'menu-y': '250', 'menu-spacing': '70','timeout': '0','has-background': 'yes',
+                        'entry-font': 'Helvetica 30 bold','entry-colour': 'black', 'entry-select-colour': 'red',
+                      'hint-text': 'Up, down to Select, Return to Play', 'hint-y': '100', 'hint-font': 'Helvetica 30 bold', 'hint-colour': 'white',
+                        'show-text':'','show-text-font':'','show-text-colour':'','show-text-x':'0','show-text-y':'0',
+                       'transition': 'cut',  'duration': '5', 'omx-audio': 'hdmi','omx-other-options': ''},
+                        
+                        'start':{'title': 'First Show','show-ref':'start', 'type': 'start','start-show':'mediashow-1'}  
+                        }
+    
+        self.show_field_specs={'sep':{'shape':'sep'},
+                    'duration':{'param':'duration','shape':'entry','text':'Duration (secs)','must':'no','read-only':'no'},
+                    'entry-font':{'param':'entry-font','shape':'entry','text':'Entry Font','must':'no','read-only':'no'},
+                    'entry-colour':{'param':'entry-colour','shape':'entry','text':'Entry Colour','must':'no','read-only':'no'},
+                    'entry-select-colour':{'param':'entry-select-colour','shape':'entry','text':'Selected Entry Colour','must':'no','read-only':'no'},
+                    'has-child':{'param':'has-child','shape':'option-menu','text':'Has Child','must':'no','read-only':'no',
+                                        'values':['yes','no']},
+                    'has-background':{'param':'has-background','shape':'option-menu','text':'Has Background Image','must':'no','read-only':'no',
+                                      'values':['yes','no']},
+                    'hint-text':{'param':'hint-text','shape':'entry','text':'Hint Text','must':'no','read-only':'no'},
+                    'hint-y':{'param':'hint-y','shape':'entry','text':'Hint y from bottom','must':'no','read-only':'no'},
+                    'hint-font':{'param':'hint-font','shape':'entry','text':'Hint Font','must':'no','read-only':'no'},
+                    'hint-colour':{'param':'hint-colour','shape':'entry','text':'Hint Colour','must':'no','read-only':'no'},
+                    'medialist':{'param':'medialist','shape':'entry','text':'Medialist','must':'no','read-only':'no'},
+                    'menu-x':{'param':'menu-x','shape':'entry','text':'Menu x Position','must':'no','read-only':'no'},
+                    'menu-y':{'param':'menu-y','shape':'entry','text':'Menu y Position','must':'no','read-only':'no'},
+                    'menu-spacing':{'param':'menu-spacing','shape':'entry','text':'Entry Spacing','must':'no','read-only':'no'},
+                    'message-font':{'param':'message-font','shape':'entry','text':'Text Font','must':'yes','read-only':'no'},
+                    'message-colour':{'param':'message-colour','shape':'entry','text':'Text Colour','must':'yes','read-only':'no'},
+                    'omx-audio':{'param':'omx-audio','shape':'option-menu','text':'OMX Audio','must':'no','read-only':'no',
+                                       'values':['hdmi','local']},
+                    'omx-other-options':{'param':'omx-other-options','shape':'entry','text':'Other OMX Options','must':'no','read-only':'no'},
+                    'progress':{'param':'progress','shape':'option-menu','text':'Progress','must':'no','read-only':'no',
+                                        'values':['auto','manual']},
+                    'repeat':{'param':'repeat','shape':'option-menu','text':'Repeat','must':'no','read-only':'no',
+                                        'values':['oneshot','interval']},
+                    'repeat-interval':{'param':'repeat-interval','shape':'entry','text':'Repeat Interval (secs.)','must':'no','read-only':'no'},
+                    'sequence':{'param':'sequence','shape':'option-menu','text':'Sequence','must':'no','read-only':'no',
+                                        'values':['ordered',]},
+                    'show-ref':{'param':'show-ref','shape':'entry','text':'Show Reference','must':'no','read-only':'no'},
+                    'show-text':{'param':'show-text','shape':'entry','text':'Show Text','must':'no','read-only':'no'},
+                    'show-text-font':{'param':'show-text-font','shape':'entry','text':'Show Text Font','must':'no','read-only':'no'},
+                    'show-text-colour':{'param':'show-text-colour','shape':'entry','text':'Show Text Colour','must':'no','read-only':'no'},
+                    'show-text-x':{'param':'show-text-x','shape':'entry','text':'Show Text x Position','must':'no','read-only':'no'},
+                    'show-text-y':{'param':'show-text-y','shape':'entry','text':'Show Text y Position','must':'no','read-only':'no'},
+                    'start-show':{'param':'start-show','shape':'option-menu','text':'First Show','must':'no','read-only':'no'},
+                    'text':{'param':'text','shape':'text','text':'Message Text','must':'no','read-only':'no'},
+                    'timeout':{'param':'timeout','shape':'entry','text':'Timeout (secs)','must':'no','read-only':'no'},
+                    'title':{'param':'title','shape':'entry','text':'Title','must':'no','read-only':'no'},
+                    'transition':{'param':'transition','shape':'option-menu','text':'Transition','must':'no','read-only':'no',
+                                        'values':['cut',]},
+                    'trigger':{'param':'trigger','shape':'option-menu','text':'Trigger','must':'no','read-only':'no',
+                                        'values':['start','button','PIR']},
+                    'type':{'param':'type','shape':'entry','text':'Type','must':'no','read-only':'yes'},
+                          }
+
+
+
+        self.new_tracks={'video':{'title':'New Video','track-ref':'','type':'video','location':'','omx-audio':''},
+                         'message':{'title':'New Message','track-ref':'','type':'message','text':'','duration':'5','message-font':'Helvetica 30 bold','message-colour':'white'},
+                         'show':{'title':'New Show','track-ref':'','type':'show','sub-show':''},
+                         'image':{'title':'New Image','track-ref':'','type':'image','location':'','duration':'','transition':'','track-text':'','track-text-font':'','track-text-colour':'','track-text-x':'0','track-text-y':'0'},
+                         'menu-background':{'title':'New Menu Background','track-ref':'pp-menu-background','type':'menu-background','location':''},
+                        'child-show': {'title':'New Child Show','track-ref':'pp-child-show','type':'show','sub-show':''}
+                         }
+        # must update track_types and new_tracks
+
+        self.track_types={'video':['type','title','track-ref','location','omx-audio'],
+                        'message':['type','title','track-ref','text','duration','message-font','message-colour'],
+                         'show':['type','title','track-ref','sub-show'],
+                         'image':['type','title','track-ref','location','duration','transition','track-text','track-text-font','track-text-colour','track-text-x','track-text-y'],
+                        'menu-background':['type','title','track-ref','location']
+                         }
+    
+        self.track_field_specs={'sep':{'shape':'sep'},
+                            'duration':{'param':'duration','shape':'entry','text':'Duration (secs)','must':'no','read-only':'no'},
+                            'location':{'param':'location','shape':'browse','text':'Location','must':'no','read-only':'no'},
+                            'message-font':{'param':'message-font','shape':'entry','text':'Text Font','must':'no','read-only':'no'},
+                            'message-colour':{'param':'message-colour','shape':'entry','text':'Text Colour','must':'no','read-only':'no'},
+                            'omx-audio':{'param':'omx-audio','shape':'option-menu','text':'omx-audio','must':'no','read-only':'no',
+                                       'values':['hdmi','local','']},
+                            'show-ref':{'param':'show-ref','shape':'entry','text':'Show Reference','must':'no','read-only':'no'},
+                            'sub-show':{'param':'sub-show','shape':'option-menu','text':'Show to Run','must':'no','read-only':'no'},
+                            'text':{'param':'text','shape':'text','text':'Message Text','must':'no','read-only':'no'},
+                            'title':{'param':'title','shape':'entry','text':'Title','must':'no','read-only':'no'},
+                            'track-ref':{'param':'track-ref','shape':'entry','text':'Track Reference','must':'no','read-only':'no'},
+                            'track-text':{'param':'track-text','shape':'entry','text':'Track Text','must':'no','read-only':'no'},
+                            'track-text-font':{'param':'track-text-font','shape':'entry','text':'Track Text Font','must':'no','read-only':'no'},
+                            'track-text-colour':{'param':'track-text-colour','shape':'entry','text':'Track Text Colour','must':'no','read-only':'no'},
+                            'track-text-x':{'param':'track-text-x','shape':'entry','text':'Track Text x Position','must':'no','read-only':'no'},
+                            'track-text-y':{'param':'track-text-y','shape':'entry','text':'Track Text y Position','must':'no','read-only':'no'},
+                            'transition':{'param':'transition','shape':'option-menu','text':'Transition','must':'no','read-only':'no','values':['cut','']},
+                            'type':{'param':'type','shape':'entry','text':'Type','must':'no','read-only':'yes'}
+                          }
+
+        
         self.command_options=ed_options()
         
         # where am I?
         if self.command_options['code']=="":
-            pp_dir="/home/pi/pipresents"
+            self.pp_dir="/home/pi/pipresents"
         else:
-            pp_dir=self.command_options['code']
+            self.pp_dir=self.command_options['code']
             
-        if not os.path.exists(pp_dir+"/pp_editor.py"):
+        if not os.path.exists(self.pp_dir+"/pp_editor.py"):
             tkMessageBox.showwarning("Pi Presents","Bad Application Directory")
             exit()
             
+        
+        #self.pp_dir= "C:\Users\Ken\Documents\Develop\Rpi\pipresents"
+            
         #Initialise logging
-        Monitor.log_path=pp_dir
+        Monitor.log_path=self.pp_dir
         self.mon=Monitor()
         self.mon.on()
 
@@ -82,7 +211,7 @@ class PPEditor:
 
         profilemenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
         profilemenu.add_command(label='Open', command = self.open_existing_profile)
-        
+        profilemenu.add_command(label='Validate', command = self.validate_profile)
         menubar.add_cascade(label='Profile', menu = profilemenu)
 
         ptypemenu = Menu(profilemenu, tearoff=0, bg="grey", fg="black")
@@ -96,7 +225,7 @@ class PPEditor:
         
         showmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
         showmenu.add_command(label='Remove', command = self.remove_show)
-        showmenu.add_command(label='Edit', command = self.edit_show)
+        showmenu.add_command(label='Edit', command = self.m_edit_show)
         menubar.add_cascade(label='Show', menu = showmenu)
 
         stypemenu = Menu(showmenu, tearoff=0, bg="grey", fg="black")
@@ -111,7 +240,7 @@ class PPEditor:
       
         trackmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
         trackmenu.add_command(label='Remove', command = self.remove_track)
-        trackmenu.add_command(label='Edit', command = self.edit_track)
+        trackmenu.add_command(label='Edit', command = self.m_edit_track)
         trackmenu.add_command(label='Add from Dir', command = self.add_tracks_from_dir)
         trackmenu.add_command(label='Add from File', command = self.add_track_from_file)
 
@@ -177,13 +306,13 @@ class PPEditor:
  # define buttons 
 
         add_button = Button(middle_frame, width = 5, height = 1, text='Edit',
-                              fg='black', command = self.edit_show, bg="light grey")
+                              fg='black', command = self.m_edit_show, bg="light grey")
         add_button.pack(side=TOP)
         add_button = Button(updown_frame, width = 5, height = 1, text='Add',
                               fg='black', command = self.add_track_from_file, bg="light grey")
         add_button.pack(side=TOP)
         add_button = Button(updown_frame, width = 5, height = 1, text='Edit',
-                              fg='black', command = self.edit_track, bg="light grey")
+                              fg='black', command = self.m_edit_track, bg="light grey")
         add_button.pack(side=TOP)
         add_button = Button(updown_frame, width = 5, height = 1, text='Up',
                               fg='black', command = self.move_track_up, bg="light grey")
@@ -264,7 +393,6 @@ class PPEditor:
 # MISCELLANEOUS
 # ***************************************
 
-
     def edit_options(self):
         """edit the options then read them from file"""
         eo = OptionsDialog(self.root, self.options.options_file,'Edit Options')
@@ -273,19 +401,21 @@ class PPEditor:
 
     def show_help (self):
         tkMessageBox.showinfo("Help",
-       "Read manual.pdf")
+       "Read 'manual.pdf'")
   
 
     def about (self):
         tkMessageBox.showinfo("About","Editor for Pi Presents Profiles\n"
-                   +"Version dated: " + datestring + "\nAuthor: Ken Thompson  - KenT")
+                   +"Version: " + self.editor_issue + "\nAuthor: Ken Thompson  - KenT")
 
-
+    def validate_profile(self):
+        val =Validator()
+        val.validate_profile(self.root,self.pp_home_dir,self.pp_profile_dir,self.editor_issue,True)
     
-
 # **************
 # Profile
 # *************
+
 
     """ opens a profile, displays the sections of showlist.json in sections pane
         clicking on a section allows it to be edited.
@@ -293,8 +423,12 @@ class PPEditor:
 
     def open_existing_profile(self):
         initial_dir=self.pp_home_dir+os.sep+"pp_profiles"
+        if os.path.exists(initial_dir)==False:
+            self.mon.err(self,"Home directory not found: " + initial_dir + "\n\nHint: Data Home option must end in pp_home")
+            return
         dir_path=tkFileDialog.askdirectory(initialdir=initial_dir)
-        if dir_path<>"":
+        #dir_path="C:\Users\Ken\Documents\Develop\Rpi\pp_home\pp_profiles/version_test"
+        if len(dir_path)>0:
             self.open_profile(dir_path)
         
 
@@ -305,7 +439,9 @@ class PPEditor:
             return
         self.pp_profile_dir = dir_path
         self.root.title("Editor for Pi Presents - "+ self.pp_profile_dir)
-        self.open_showlist(self.pp_profile_dir)
+        if self.open_showlist(self.pp_profile_dir)==False:
+            self.init()
+            return
         self.open_medialists(self.pp_profile_dir)
         self.refresh_tracks_display()
 
@@ -323,33 +459,99 @@ class PPEditor:
                                 "New Profile",
                                 "Profile exists\n(%s)" % to
                                         )
+
         
-
-
     def new_exhibit_profile(self):
-        profile = os.getcwd()+"/pp_home/pp_profiles/ppt_exhibit"
+        profile = self.pp_dir+"/pp_home/pp_profiles/ppt_exhibit"
         self.new_profile(profile)
 
     def new_interactive_profile(self):
-        profile = os.getcwd()+"/pp_home/pp_profiles/ppt_interactive"
+        profile = self.pp_dir+"/pp_home/pp_profiles/ppt_interactive"
         self.new_profile(profile)
 
     def new_menu_profile(self):
-        profile = os.getcwd()+"/pp_home/pp_profiles/ppt_menu"
+        profile = self.pp_dir+"/pp_home/pp_profiles/ppt_menu"
         self.new_profile(profile)
 
     def new_presentation_profile(self):
-        profile = os.getcwd()+"/pp_home/pp_profiles/ppt_presentation"
+        profile = self.pp_dir+"/pp_home/pp_profiles/ppt_presentation"
         self.new_profile(profile)
 
     def new_blank_profile(self):
-        profile = os.getcwd()+"/pp_home/pp_profiles/ppt_blank"
+        profile = self.pp_dir+"/pp_home/pp_profiles/ppt_blank"
         self.new_profile(profile)
 
     def new_mediashow_profile(self):
-        profile = os.getcwd()+"/pp_home/pp_profiles/ppt_mediashow"
+        profile = self.pp_dir+"/pp_home/pp_profiles/ppt_mediashow"
         self.new_profile(profile)
 
+    def update_profile(self):
+         #open showlist and update its shows
+        ifile  = open(self.pp_profile_dir + os.sep + "pp_showlist.json", 'rb')
+        shows = json.load(ifile)['shows']
+        ifile.close()
+        replacement_shows=self.update_shows(shows)
+        dic={'issue':self.editor_issue,'shows':replacement_shows}
+        ofile  = open(self.pp_profile_dir + os.sep + "pp_showlist.json", "wb")
+        json.dump(dic,ofile,sort_keys=True,indent=1)
+
+        
+        # UPDATE MEDIALISTS AND THEIR TRACKS
+        for file in os.listdir(self.pp_profile_dir):
+            if file.endswith(".json") and file<>'pp_showlist.json':
+                #open a medialist and update its tracks
+                ifile  = open(self.pp_profile_dir + os.sep + file, 'rb')
+                tracks = json.load(ifile)['tracks']
+                ifile.close()
+                replacement_tracks=self.update_tracks(tracks)
+                dic={'issue':self.editor_issue,'tracks':replacement_tracks}
+                ofile  = open(self.pp_profile_dir + os.sep + file, "wb")
+                json.dump(dic,ofile,sort_keys=True,indent=1)
+
+
+    def update_tracks(self,old_tracks):
+        # get correct spec from type of field
+        replacement_tracks=[]
+        for old_track in old_tracks:
+            track_type=old_track['type']
+            spec_fields=self.new_tracks[track_type]
+            # go through track and delete fields not in spec
+            while True:
+                to_delete=""
+                for track_field in old_track:
+                    if track_field not in spec_fields:
+                        to_delete=track_field
+                if to_delete<>"":
+                    del old_track[to_delete]
+                else:
+                    break
+            replacement_track=self.new_tracks[track_type]
+            replacement_track.update(old_track)
+            replacement_tracks.append(copy.deepcopy(replacement_track))
+        return replacement_tracks
+
+
+    def update_shows(self,old_shows):
+        # get correct spec from type of field
+        replacement_shows=[]
+        for old_show in old_shows:
+            show_type=old_show['type']
+            spec_fields=self.new_shows[show_type]
+            # go through show and delete fields not in spec
+            while True:
+                to_delete=""
+                for show_field in old_show:
+                    if show_field not in spec_fields:
+                        to_delete=show_field
+                if to_delete<>"":
+                    del old_show[to_delete]
+                else:
+                    break
+            replacement_show=self.new_shows[show_type]
+            replacement_show.update(old_show)
+            replacement_shows.append(copy.deepcopy(replacement_show))
+        return replacement_shows                
+            
 # ***************************************
 # Shows
 # ***************************************
@@ -361,7 +563,15 @@ class PPEditor:
             self.app_exit()
         self.current_showlist=ShowList()
         self.current_showlist.open_json(showlist_file)
+        if float(self.current_showlist.sissue())<float(self.editor_issue):
+            self.update_profile()
+            self.mon.err(self,"Version of profile has been updated to "+self.editor_issue+", please re-open")
+            return False
+        if float(self.current_showlist.sissue())>float(self.editor_issue):
+            self.mon.err(self,"Version of profile is greater than editor, must exit")
+            self.app_exit()
         self.refresh_shows_display()
+        return True
 
 
     def save_showlist(self,dir):
@@ -371,23 +581,13 @@ class PPEditor:
 
 
     def add_mediashow(self):
-        default_mediashow={'title': 'New Mediashow','show-ref':'', 'type': 'mediashow', 'medialist': '',
-                          'trigger': 'start','progress': 'auto','sequence': 'ordered','repeat': 'interval','repeat-interval': '10',
-                            'has-child': 'no', 'hint-text': '', 'hint-y': '100','hint-font': 'Helvetica 30 bold','hint-colour': 'white',
-                           'transition': 'cut', 'duration': '5','omx-audio': 'hdmi','omx-other-options': ''}    
-        self.add_show(default_mediashow)
+        self.add_show(self.new_shows['mediashow'])
         
     def add_menu(self):
-        default_menu={'show-ref': '', 'title': 'New Menu','type': 'menu','medialist': '',
-                        'menu-x': '300', 'menu-y': '250', 'menu-spacing': '70','timeout': '0','has-background': 'yes',
-                        'entry-font': 'Helvetica 30 bold','entry-colour': 'black', 'entry-select-colour': 'red',
-                      'hint-text': 'Up, down to Select, Return to Play', 'hint-y': '100', 'hint-font': 'Helvetica 30 bold', 'hint-colour': 'white',
-                       'transition': 'cut',  'duration': '5', 'omx-audio': 'hdmi','omx-other-options': ''}
-        self.add_show(default_menu)
+        self.add_show(self.new_shows['menu'])
 
-    def add_start(self):
-        default_start={'title': 'First Show','show-ref':'start', 'type': 'start','start-show':'mediashow-1'}    
-        self.add_show(default_start)
+    def add_start(self):  
+        self.add_show(self.new_shows['start'])
 
     def add_show(self,default):
         # append it to the showlist
@@ -408,7 +608,7 @@ class PPEditor:
         _show_refs=[]
         for index in range(self.current_showlist.length()):
             if self.current_showlist.show(index)['show-ref']<>"start":
-                _show_refs.append(self.current_showlist.show(index)['show-ref'])
+                _show_refs.append(copy.deepcopy(self.current_showlist.show(index)['show-ref']))
         return _show_refs
  
     def refresh_shows_display(self):
@@ -426,64 +626,10 @@ class PPEditor:
             self.current_showlist.select(mouse_item_index)
             self.refresh_shows_display()
 
-    def e_edit_show(self,event):
-        self.edit_show()
+    def m_edit_show(self):
+        self.edit_show(self.show_types,self.show_field_specs)
 
-    def edit_show(self):
-        show_types={'mediashow':[ 'type','title','show-ref', 'medialist','sep',
-                          'trigger','progress','sequence','repeat','repeat-interval','sep',
-                            'has-child', 'hint-text', 'hint-y','hint-font','hint-colour','sep',
-                           'transition', 'duration','omx-audio','omx-other-options'],
-                        'menu':['type','title','show-ref','medialist','sep',
-                        'menu-x', 'menu-y', 'menu-spacing','timeout','has-background',
-                        'entry-font','entry-colour', 'entry-select-colour','sep',
-                      'hint-text', 'hint-y', 'hint-font', 'hint-colour','sep',
-                       'transition','duration', 'omx-audio','omx-other-options'],
-                    'start':['type','title','show-ref','start-show']
-                     }
-    
-        field_specs={'sep':{'shape':'sep'},
-                    'duration':{'param':'duration','shape':'entry','text':'Duration (secs)','must':'no','read-only':'no'},
-                    'entry-font':{'param':'entry-font','shape':'entry','text':'Entry Font','must':'no','read-only':'no'},
-                    'entry-colour':{'param':'entry-colour','shape':'entry','text':'Entry Colour','must':'no','read-only':'no'},
-                    'entry-select-colour':{'param':'entry-select-colour','shape':'entry','text':'Selected Entry Colour','must':'no','read-only':'no'},
-                    'has-child':{'param':'has-child','shape':'option-menu','text':'Has Child','must':'no','read-only':'no',
-                                        'values':['yes','no']},
-                    'has-background':{'param':'has-background','shape':'option-menu','text':'Has Background Image','must':'no','read-only':'no',
-                                      'values':['yes','no']},
-                    'hint-text':{'param':'hint-text','shape':'entry','text':'Hint Text','must':'no','read-only':'no'},
-                    'hint-y':{'param':'hint-y','shape':'entry','text':'Hint y from bottom','must':'no','read-only':'no'},
-                    'hint-font':{'param':'hint-font','shape':'entry','text':'Hint Font','must':'no','read-only':'no'},
-                    'hint-colour':{'param':'hint-colour','shape':'entry','text':'Hint Colour','must':'no','read-only':'no'},
-                    'medialist':{'param':'medialist','shape':'entry','text':'Medialist','must':'no','read-only':'no'},
-                    'menu-x':{'param':'menu-x','shape':'entry','text':'Menu x Position','must':'no','read-only':'no'},
-                    'menu-y':{'param':'menu-y','shape':'entry','text':'Menu y Position','must':'no','read-only':'no'},
-                    'menu-spacing':{'param':'menu-spacing','shape':'entry','text':'Entry Spacing','must':'no','read-only':'no'},
-                    'message-font':{'param':'message-font','shape':'entry','text':'Text Font','must':'yes','read-only':'no'},
-                    'message-colour':{'param':'message-colour','shape':'entry','text':'Text Colour','must':'yes','read-only':'no'},
-                    'omx-audio':{'param':'omx-audio','shape':'option-menu','text':'OMX Audio','must':'no','read-only':'no',
-                                       'values':['hdmi','local']},
-                    'omx-other-options':{'param':'omx-other-options','shape':'entry','text':'Other OMX Options','must':'no','read-only':'no'},
-                    'progress':{'param':'progress','shape':'option-menu','text':'Progress','must':'no','read-only':'no',
-                                        'values':['auto','manual']},
-                    'repeat':{'param':'repeat','shape':'option-menu','text':'Repeat','must':'no','read-only':'no',
-                                        'values':['oneshot','interval']},
-                    'repeat-interval':{'param':'repeat-interval','shape':'entry','text':'Repeat Interval (secs.)','must':'no','read-only':'no'},
-                    'sequence':{'param':'sequence','shape':'option-menu','text':'Sequence','must':'no','read-only':'no',
-                                        'values':['ordered',]},
-                    'show-ref':{'param':'show-ref','shape':'entry','text':'Show Reference','must':'no','read-only':'no'},
-                    'start-show':{'param':'start-show','shape':'option-menu','text':'First Show','must':'no','read-only':'no'},
-                    'text':{'param':'text','shape':'text','text':'Message Text','must':'no','read-only':'no'},
-                    'timeout':{'param':'timeout','shape':'entry','text':'Timeout (secs)','must':'no','read-only':'no'},
-                    'title':{'param':'title','shape':'entry','text':'Title','must':'no','read-only':'no'},
-                    'transition':{'param':'transition','shape':'option-menu','text':'Transition','must':'no','read-only':'no',
-                                        'values':['cut',]},
-                    'trigger':{'param':'trigger','shape':'option-menu','text':'Trigger','must':'no','read-only':'no',
-                                        'values':['start','button','PIR']},
-                    'type':{'param':'type','shape':'entry','text':'Type','must':'no','read-only':'yes'},
-                          }
-
-    
+    def edit_show(self,show_types,field_specs):
         if self.current_showlist<>None and self.current_showlist.show_is_selected():
             d=EditItemDialog(self.root,"Edit Show",self.current_showlist.selected_show(),show_types,field_specs,self.show_refs())
             if d.result == True:
@@ -514,18 +660,25 @@ class PPEditor:
                                 "File", "")
         if d != None:
             name=str(d.result)
+            if name=="":
+                tkMessageBox.showwarning(
+                                "Add medialist",
+                                "Name is blank"
+                                        )
+                return
             if not name.endswith(".json"):
                 name=name+(".json")
             path = self.pp_profile_dir + os.sep + name
             if os.path.exists(path)== False:
                 nfile = open(path,'wb')
                 nfile.write("{")
+                nfile.write("\"issue\":  \""+self.editor_issue+"\",\n")
                 nfile.write("\"tracks\": [")
                 nfile.write("]")
                 nfile.write("}")
                 nfile.close()
                 # append it to the list
-                self.medialists.append(name)
+                self.medialists.append(copy.deepcopy(name))
                 # add title to medialists display
                 self.medialists_display.insert(END, name)  
                 # and set it as the selected medialist
@@ -555,7 +708,9 @@ class PPEditor:
         if len(self.medialists)>0:
             self.current_medialists_index=int(event.widget.curselection()[0])
             self.current_medialist=MediaList()
-            self.current_medialist.open_list(self.pp_profile_dir+ os.sep + self.medialists[self.current_medialists_index])
+            if not self.current_medialist.open_list(self.pp_profile_dir+ os.sep + self.medialists[self.current_medialists_index],self.current_showlist.sissue()):
+                self.mon.err(self,"medialist is a different version to showlist: "+ self.medialists[self.current_medialists_index])
+                self.app_exit()        
             self.refresh_tracks_display()
             self.refresh_medialists_display()
 
@@ -595,35 +750,11 @@ class PPEditor:
             self.current_medialist.select(mouse_item_index)
             self.refresh_tracks_display()
 
-    def e_edit_track(self,event):
-        self.edit_track()
+    def m_edit_track(self):
+        self.edit_track(self.track_types,self.track_field_specs)
 
-    def edit_track(self):
-        track_types={'video':['type','title','track-ref','location','omx-audio'],
-                        'message':['type','title','track-ref','text','duration','message-font','message-colour'],
-                         'show':['type','title','track-ref','sub-show'],
-                         'image':['type','title','track-ref','location','duration','transition'],
-                        'menu-background':['type','title','track-ref','location']
-             }
-    
-        field_specs={'sep':{'shape':'sep'},
-                            'duration':{'param':'duration','shape':'entry','text':'Duration (secs)','must':'no','read-only':'no'},
-                            'location':{'param':'location','shape':'browse','text':'Location','must':'no','read-only':'no'},
-                            'message-font':{'param':'message-font','shape':'entry','text':'Text Font','must':'no','read-only':'no'},
-                            'message-colour':{'param':'message-colour','shape':'entry','text':'Text Colour','must':'no','read-only':'no'},
-                            'omx-audio':{'param':'omx-audio','shape':'option-menu','text':'omx-audio','must':'no','read-only':'no',
-                                       'values':['hdmi','local','']},
-                            'show-ref':{'param':'show-ref','shape':'entry','text':'Show Reference','must':'no','read-only':'no'},
-                            'sub-show':{'param':'sub-show','shape':'option-menu','text':'Show to Run','must':'no','read-only':'no'},
-                            'text':{'param':'text','shape':'text','text':'Message Text','must':'no','read-only':'no'},
-                            'title':{'param':'title','shape':'entry','text':'Title','must':'no','read-only':'no'},
-                            'track-ref':{'param':'track-ref','shape':'entry','text':'Track Reference','must':'no','read-only':'no'},
-                            'transition':{'param':'transition','shape':'option-menu','text':'Transition','must':'no','read-only':'no',
-                                        'values':['cut','']},
-                            'type':{'param':'type','shape':'entry','text':'Type','must':'no','read-only':'yes'}
-                          }
-
-    
+    def edit_track(self,track_types,field_specs):
+       
         if self.current_medialist<>None and self.current_medialist.track_is_selected():
             d=EditItemDialog(self.root,"Edit Track",self.current_medialist.selected_track(),track_types,field_specs,self.show_refs())
             if d.result == True:
@@ -642,37 +773,34 @@ class PPEditor:
             self.refresh_tracks_display()
             self.save_medialist()
         
-    def new_track(self,default):
+    def new_track(self,fields,values):
         if self.current_medialist<>None:
-            self.current_medialist.append(default)
+            new_track=fields
+            self.current_medialist.append(new_track)
+            if values<>None:
+                self.current_medialist.update(self.current_medialist.length()-1,values)
             self.current_medialist.select(self.current_medialist.length()-1)
             self.save_medialist()
             self.refresh_tracks_display()
 
 
     def new_message_track(self):
-        default_message={'title':'New Message','track-ref':'','type':'message','text':'','duration':'5','message-font':'Helvetica 30 bold','message-colour':'white'}
-        self.new_track(default_message)
+        self.new_track(self.new_tracks['message'],None)
                        
     def new_video_track(self):
-        default_video={'title':'New Video','track-ref':'','type':'video','location':'','omx-audio':''}
-        self.new_track(default_video)
+        self.new_track(self.new_tracks['video'],None)
     
     def new_image_track(self):
-        default_image={'title':'New Image','track-ref':'','type':'image','location':'','duration':'5','transition':'cut'}
-        self.new_track(default_image)
+        self.new_track(self.new_tracks['image'],None)
     
     def new_show_track(self):
-        default_show={'title':'New Show','track-ref':'','type':'show','sub-show':''}
-        self.new_track(default_show)
+        self.new_track(self.new_tracks['show'],None)
         
     def new_menu_background_track(self):
-        default_menu_background={'title':'New Menu Background','track-ref':'pp-menu-background','type':'menu-background','location':''}
-        self.new_track(default_menu_background)
+        self.new_track(self.new_tracks['menu-background'],None)
 
     def new_child_show_track(self):
-        default_show={'title':'New Child Show','track-ref':'pp-child-show','type':'show','sub-show':''}
-        self.new_track(default_show)
+        self.new_track(self.new_tracks['child-show'],None)
 
     def remove_track(self):
         if  self.current_medialist<>None and self.current_medialist.length()>0 and self.current_medialist.track_is_selected():
@@ -684,8 +812,7 @@ class PPEditor:
                 
     def add_track_from_file(self):
         if self.current_medialist==None: return
-        files_path=tkFileDialog.askopenfilename(initialdir=self.options.initial_media_dir,
-        		multiple=True)
+        files_path=tkFileDialog.askopenfilename(initialdir=self.options.initial_media_dir, multiple=True)
         # fix for tkinter bug
         files_path =  self.root.tk.splitlist(files_path)
         for file_path in files_path:
@@ -700,21 +827,21 @@ class PPEditor:
           ('All files', '*')]    #last one is ignored in finding files
                                     # in directory, for dialog box only
         directory=tkFileDialog.askdirectory(initialdir=self.options.initial_media_dir)
-
-        #print image_specs
+        # deal with tuple returned on Cancel
+        if len(directory)==0: return
         # make list of exts we recognise
         exts = []
         for image_spec in image_specs[:-1]:
             image_list=image_spec[1:]
             for ext in image_list:
-                exts.append(ext)
+                exts.append(copy.deepcopy(ext))
         #list of files in directory matching exts
         files=[]
         for file in os.listdir(directory):
             file = directory + os.sep + file
             (root_file,ext_file)= os.path.splitext(file)
             if ext_file.lower() in exts:
-                files.append(file)
+                files.append(copy.deepcopy(file))
         #now add to medialist from the files
         for afile in files:
             self.add_track(afile)
@@ -731,14 +858,11 @@ class PPEditor:
         (root,title)=os.path.split(afile)
         (root,ext)= os.path.splitext(afile)
         if ext.lower() in PPEditor.IMAGE_FILES:
-            image={'title':title,'track-ref':'','type':'image','location':location,'duration':'5','transition':'cut'}
-            self.new_track(image)
+            self.new_track(self.new_tracks['image'],{'title':title,'track-ref':'','location':location,'duration':'','transition':'cut'})
         elif ext.lower() in PPEditor.VIDEO_FILES:
-            video={'title':title,'track-ref':'','type':'video','location':location,'omx-audio':''}
-            self.new_track(video)
+            self.new_track(self.new_tracks['video'],{'title':title,'track-ref':'','location':location,'omx-audio':''})
         elif ext.lower() in PPEditor.AUDIO_FILES:
-            video={'title':title,'track-ref':'','type':'video','location':location,'omx-audio':''}
-            self.new_track(video)
+            self.new_track(self.new_tracks['video'],{'title':title,'track-ref':'','location':location,'omx-audio':''})
         else:
             self.mon.err(self,afile + " - file extension not recognised")
 
@@ -768,6 +892,8 @@ class Edit1Dialog(tkSimpleDialog.Dialog):
     def apply(self):
         self.result= self.field1.get()
         return self.result
+
+
 
 
 
@@ -893,10 +1019,9 @@ class EditItemDialog(tkSimpleDialog.Dialog):
         tkSimpleDialog.Dialog.__init__(self, parent, title)
 
 
-    def body(self, master):
-                    
+    def body(self, master):  
         # get fields for this type of track               }
-        track_fields=self.track_types[self.tp['type']]              
+        track_fields=self.track_types[self.tp['type']]
         # populate the dialog box
         row=0
         self.fields=[]
@@ -993,13 +1118,12 @@ class EditItemDialog(tkSimpleDialog.Dialog):
 
 
 
-
 # ***************************************
 # MAIN
 # ***************************************
 
 
 if __name__ == "__main__":
-    datestring=" 7 Jan 2013"
+    datestring=" 20 Jan 2013"
     editor = PPEditor()
 
