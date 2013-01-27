@@ -1,7 +1,7 @@
 Version 1.1.1
 
-unclutter must be installed before using Pi Presents - sudo apt-get install unclutter
+unclutter must be installed before using Pi Presents  (sudo apt-get install unclutter)
 
-In my tests liveshow coped well with deleting tracks at any time. However I can see there possible problems as the files could be deleted at the moment they are being read. If you have problems please report them and I will improve the mutual exclusion.
+In my tests liveshow coped well with deleting tracks at any time. However I can see there are potential problems as files could be deleted at the moment they are being read. If you have problems please report them and I will improve the mutual exclusion.
 
-Take care when modifying resources.cfg, little error checking is done.
+Take care when modifying resources.cfg, little error checking is done by Pi Presents.
