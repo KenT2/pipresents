@@ -10,6 +10,7 @@ from pp_imageplayer import ImagePlayer
 from pp_medialist import MediaList
 from pp_videoplayer import VideoPlayer
 from pp_messageplayer import MessagePlayer
+from pp_resourcereader import ResourceReader
 from pp_utils import Monitor
 
 
@@ -51,6 +52,8 @@ class MenuShow:
         self.pp_home=pp_home
         self.pp_profile=pp_profile
 
+        # open resources
+        self.rr=ResourceReader()
         
         # init variables
         self.drawn  = None
@@ -189,7 +192,13 @@ class MenuShow:
         else:
             self._end("killed")
 
-
+    def resource(self,section,item):
+        value=self.rr.get(section,item)
+        if value==False:
+            self.mon.err(self, "resource: "+section +': '+ item + " not found" )
+            self._stop("fatal error")
+        else:
+            return value
 
 # *********************
 # INTERNAL FUNCTIONS
@@ -252,10 +261,7 @@ class MenuShow:
         self.mon.log(self,"Track to play is: "+ track_file)
         return track_file     
          
-        if os.path.exists(track_file)==False:
-            self.mon.err(self,"Track not found: "+ track_file)
-            self._end("track file not found")
-            return False
+
 
     def _play_selected_track(self,selected_track):
         """ selects the appropriate player from type field of the medialist and computes
@@ -267,7 +273,7 @@ class MenuShow:
         if self.menu_timeout_running<>None:
             self.canvas.after_cancel(self.menu_timeout_running)
             self.menu_timeout_running=None
-        self._display_eggtimer('Loading........')
+        self._display_eggtimer(self.resource('menushow','m01'))
     
         # dispatch track by type
         self.player=None
@@ -323,6 +329,14 @@ class MenuShow:
                                                                 self.pp_profile)
                 self.shower.play(self._end_shower,top=False)
 
+            elif selected_show['type']=="liveshow":    
+                self.shower= LiveShow(selected_show,
+                                                                self.canvas,
+                                                                self.showlist,
+                                                                self.pp_home,
+                                                                self.pp_profile)
+                self.shower.play(self.end_shower,top=False)
+
             elif selected_show['type']=="menu": 
                 self.shower= MenuShow(selected_show,
                                                         self.canvas,
@@ -343,7 +357,7 @@ class MenuShow:
         self.player=None
         if message in("killed","fatal error"):
             self._end(message)
-        self._display_eggtimer("Stopping..")
+        self._display_eggtimer(self.resource('menushow','m02'))
         self._what_next(message)
 
     def _end_shower(self,message):
@@ -351,7 +365,7 @@ class MenuShow:
         self.shower=None
         if message in ("killed","fatal error"):
             self._end(message)
-        self._display_eggtimer("Stopping..")
+        self._display_eggtimer(self.resource('menushow','m03'))
         self._what_next(message)  
    
 
@@ -410,8 +424,6 @@ class MenuShow:
             self.canvas.itemconfig(self.menu_entry_id[index],fill=self.show['entry-colour'])
     
     
-    # make this cd controlled!!!!!!!!!!
-
     def _display_eggtimer(self,text):
         self.canvas.create_text(int(self.canvas['width'])/2,
                                               int(self.canvas['height'])/2,
@@ -425,3 +437,4 @@ class MenuShow:
             self.canvas.delete(ALL)
 
 from pp_mediashow import MediaShow
+from pp_liveshow import LiveShow

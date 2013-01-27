@@ -10,6 +10,7 @@ from pp_videoplayer import VideoPlayer
 from pp_medialist import MediaList
 from pp_utils import Monitor
 from pp_messageplayer import MessagePlayer
+from pp_resourcereader import ResourceReader
 
 class MediaShow:
 
@@ -44,6 +45,8 @@ class MediaShow:
         self.pp_home=pp_home
         self.pp_profile=pp_profile
 
+        # open resources
+        self.rr=ResourceReader()
 
         # Init variables
         self.player=None
@@ -177,6 +180,14 @@ class MediaShow:
             self.canvas.after_cancel(self._interval_timer)
             self._interval_timer=None
 
+    def resource(self,section,item):
+        value=self.rr.get(section,item)
+        if value==False:
+            self.mon.err(self, "resource: "+section +': '+ item + " not found" )
+            self._stop("fatal error")
+        else:
+            return value
+
 # ***************************
 # Respond to key/button presses
 # ***************************
@@ -265,7 +276,7 @@ class MediaShow:
         if self.show['trigger']=="button":
             # blank screen waiting for trigger if auto, otherwise display something
             if self.show['progress']=="manual":
-                text="To start the show press 'Play'"
+                text= self.resource('mediashow','m01')
             else:
                 text=""
 
@@ -274,7 +285,8 @@ class MediaShow:
 
         elif self.show['trigger']=="PIR":
             # blank screen waiting for trigger
-            self.display_message(self.canvas,'text','',0,self._start_playing)      
+            text = self.resource('mediashow','m02')
+            self.display_message(self.canvas,'text',text,0,self._start_playing)      
             
         elif self.show['trigger']=="start":
             self._start_playing()
@@ -313,7 +325,7 @@ class MediaShow:
             if index >=0:
                 #don't select the track as need to preserve mediashow sequence.
                 child_track=self.medialist.track(index)
-                self._display_eggtimer("Loading.....")
+                self._display_eggtimer(self.resource('mediashow','m07'))
                 self._play_selected_track(child_track)
             else:
                 self.mon.err(self,"Child show not found in medialist: "+ self.show['pp-child-show'])
@@ -348,7 +360,7 @@ class MediaShow:
         # track has finished by user doing a stop and manual so restart, or naturally but we are on manual so poll for user input                   
         elif self.show['progress']=="manual":
                     self._delete_eggtimer()
-                    self._display_eggtimer("Waiting. To show next slide press 'Next'")
+                    self._display_eggtimer(self.resource('mediashow','m03'))
                     self._poll_for_continue_timer=self.canvas.after(500,self._do_playing)
                     
         else:
@@ -423,11 +435,7 @@ class MediaShow:
         self.mon.log(self,"Track to play is: "+ track_file)
         return track_file     
          
-        if os.path.exists(track_file)==False:
-            self.mon.err(self,"Track not found: "+ track_file)
-            self._error("track file not found")
-            return False
-
+        
 
 
     def _play_selected_track(self,selected_track):
@@ -437,7 +445,7 @@ class MediaShow:
         """
         self.canvas.delete(ALL)
         if self.show['progress']=="manual":
-            self._display_eggtimer("Loading.....")
+            self._display_eggtimer(self.resource('mediashow','m04'))
 
         # is menu required
         if self.show['has-child']=="yes":
@@ -498,6 +506,13 @@ class MediaShow:
                                                                 self.pp_profile)
                 self.shower.play(self.end_shower,top=False)
 
+            elif selected_show['type']=="liveshow":    
+                self.shower= LiveShow(selected_show,
+                                                                self.canvas,
+                                                                self.showlist,
+                                                                self.pp_home,
+                                                                self.pp_profile)
+                self.shower.play(self.end_shower,top=False)
             
             elif selected_show['type']=="menu":
                 self.shower= MenuShow(selected_show,
@@ -526,7 +541,8 @@ class MediaShow:
         if message in ("killed","fatal error"):
             self._end(message)
         elif self.show['progress']=="manual":
-            self._display_eggtimer("Stopping..")
+            self._display_eggtimer(self.resource('mediashow','m05'))
+            
         self._do_playing()
 
     def end_shower(self,message):
@@ -535,7 +551,8 @@ class MediaShow:
         if message in ("killed","fatal error"):
             self._end(message)
         elif self.show['progress']=="manual":
-            self._display_eggtimer("Stopping..")
+            self._display_eggtimer(self.resource('mediashow','m06'))
+            
         self._do_playing()  
         
         
@@ -552,3 +569,4 @@ class MediaShow:
             self.canvas.delete(ALL)
         
 from pp_menushow import MenuShow
+from pp_liveshow import LiveShow

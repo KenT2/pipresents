@@ -13,6 +13,7 @@ import ConfigParser
 import shutil
 import json
 import copy
+import string
 
 from pp_medialist import MediaList
 from pp_showlist import ShowList
@@ -28,7 +29,7 @@ class PPEditor:
 
     IMAGE_FILES=('Image files', '.gif','.jpg','.jpeg','.bmp','.png','.tif')
     VIDEO_FILES=('video files','.mp4','.mkv','.avi','.mp2','.wmv')
-    AUDIO_FILES=('audio files','.mp3')
+    AUDIO_FILES=('audio files','.mp3','.wav','.ogg')
 
 # ***************************************
 # INIT
@@ -51,6 +52,11 @@ class PPEditor:
                       'hint-text', 'hint-y', 'hint-font', 'hint-colour','sep',
                         'show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
                        'transition','duration', 'omx-audio','omx-other-options'],
+                       
+                       'liveshow':[ 'type','title','show-ref', 'medialist','sep',
+                            'has-child', 'hint-text', 'hint-y','hint-font','hint-colour','sep',
+                           'show-text','show-text-font','show-text-colour','show-text-x','show-text-y',
+                           'transition', 'duration','omx-audio','omx-other-options'],
                          
                     'start':['type','title','show-ref','start-show']
                      }
@@ -59,6 +65,11 @@ class PPEditor:
         
         self.new_shows={'mediashow':{'title': 'New Mediashow','show-ref':'', 'type': 'mediashow', 'medialist': '',
                           'trigger': 'start','progress': 'auto','sequence': 'ordered','repeat': 'interval','repeat-interval': '10',
+                            'has-child': 'no', 'hint-text': '', 'hint-y': '100','hint-font': 'Helvetica 30 bold','hint-colour': 'white',
+                            'show-text':'','show-text-font':'','show-text-colour':'','show-text-x':'0','show-text-y':'0',
+                                     'transition': 'cut', 'duration': '5','omx-audio': 'hdmi','omx-other-options': ''},
+                                     
+                           'liveshow':{'title': 'New Liveshow','show-ref':'', 'type': 'liveshow', 'medialist': '',
                             'has-child': 'no', 'hint-text': '', 'hint-y': '100','hint-font': 'Helvetica 30 bold','hint-colour': 'white',
                             'show-text':'','show-text-font':'','show-text-colour':'','show-text-x':'0','show-text-y':'0',
                                      'transition': 'cut', 'duration': '5','omx-audio': 'hdmi','omx-other-options': ''},
@@ -128,7 +139,7 @@ class PPEditor:
                          'menu-background':{'title':'New Menu Background','track-ref':'pp-menu-background','type':'menu-background','location':''},
                         'child-show': {'title':'New Child Show','track-ref':'pp-child-show','type':'show','sub-show':''}
                          }
-        # must update track_types and new_tracks
+        # must update track_types and new_tracks also check track creation in liveshow
 
         self.track_types={'video':['type','title','track-ref','location','omx-audio'],
                         'message':['type','title','track-ref','text','duration','message-font','message-colour'],
@@ -157,24 +168,25 @@ class PPEditor:
                             'transition':{'param':'transition','shape':'option-menu','text':'Transition','must':'no','read-only':'no','values':['cut','']},
                             'type':{'param':'type','shape':'entry','text':'Type','must':'no','read-only':'yes'}
                           }
+        
+        # print " name and separator ", os.name, os.sep
+        # print "os.getcwd() -  CWD ", os.getcwd()
+        # print "sys.path[0] -  location of code: code ",sys.path[0]
+        # print "os.getenv('HOME') -  user home dir ", os.getenv('HOME')
+        # print "os.path.expanduser('~') -  user home dir ", os.path.expanduser('~')
 
-        
+# get command options
         self.command_options=ed_options()
-        
-        # where am I?
-        if self.command_options['code']=="":
-            self.pp_dir="/home/pi/pipresents"
-        else:
-            self.pp_dir=self.command_options['code']
+
+# get directory holding the code
+        self.pp_dir=sys.path[0]
             
-        if not os.path.exists(self.pp_dir+"/pp_editor.py"):
+        if not os.path.exists(self.pp_dir+os.sep+"pp_editor.py"):
             tkMessageBox.showwarning("Pi Presents","Bad Application Directory")
             exit()
             
-        
-        #self.pp_dir= "C:\Users\Ken\Documents\Develop\Rpi\pipresents"
-            
-        #Initialise logging
+          
+#Initialise logging
         Monitor.log_path=self.pp_dir
         self.mon=Monitor()
         self.mon.on()
@@ -186,6 +198,7 @@ class PPEditor:
 
         self.mon.log (self, "Pi Presents Editor is starting")
 
+ # set up the gui
  
         #root is the Tkinter root widget
         self.root = tk.Tk()
@@ -193,7 +206,7 @@ class PPEditor:
 
         self.root.configure(background='grey')
         # width, height, xoffset, yoffset
-        self.root.geometry('900x300+650+000')
+        self.root.geometry('900x300+650+100')
         # windows is 700 width
         self.root.resizable(True,True)
 
@@ -220,6 +233,7 @@ class PPEditor:
         ptypemenu.add_command(label='Menu', command = self.new_menu_profile)
         ptypemenu.add_command(label='Presentation', command = self.new_presentation_profile)
         ptypemenu.add_command(label='Interactive', command = self.new_interactive_profile)
+        ptypemenu.add_command(label='Live Show', command = self.new_liveshow_profile)
         ptypemenu.add_command(label='Blank', command = self.new_blank_profile)
         profilemenu.add_cascade(label='New from Template', menu = ptypemenu)
         
@@ -231,6 +245,7 @@ class PPEditor:
         stypemenu = Menu(showmenu, tearoff=0, bg="grey", fg="black")
         stypemenu.add_command(label='Menu', command = self.add_menu)
         stypemenu.add_command(label='Mediashow', command = self.add_mediashow)
+        stypemenu.add_command(label='Liveshow', command = self.add_liveshow)
         showmenu.add_cascade(label='Add', menu = stypemenu)
         
         medialistmenu = Menu(menubar, tearoff=0, bg="grey", fg="black")
@@ -345,7 +360,7 @@ class PPEditor:
         self.medialists_display.bind("<ButtonRelease-1>", self.select_medialist)
 
 
-# define display of track
+# define display of tracks
         scrollbar = Scrollbar(tracks_frame, orient=tk.VERTICAL)
         self.tracks_display = Listbox(tracks_frame, selectmode=SINGLE, height=15,
                                     width = 40, bg="white",activestyle=NONE,
@@ -356,19 +371,19 @@ class PPEditor:
         self.tracks_display.bind("<ButtonRelease-1>", self.e_select_track)
 
 
-# initialise variables
-
-       # initialise editor options class and do initial reading/creation of options
-        self.options=Options() #creates options file if necessary
+# initialise editor options class
+        self.options=Options(self.pp_dir) #creates options file in code directory if necessary
+        
+# initialise variables      
         self.init()
         
-
-
-#and display them going with Tkinter event loop
+#and enter Tkinter event loop
         self.root.mainloop()        
 
 
-#exit
+# ***************************************
+# INIT AND EXIT
+# ***************************************
     def app_exit(self):
         self.root.destroy()
         exit()
@@ -406,20 +421,17 @@ class PPEditor:
 
     def about (self):
         tkMessageBox.showinfo("About","Editor for Pi Presents Profiles\n"
-                   +"Version: " + self.editor_issue + "\nAuthor: Ken Thompson  - KenT")
+                   +"For profile version: " + self.editor_issue + "\nAuthor: Ken Thompson  - KenT")
 
     def validate_profile(self):
         val =Validator()
         val.validate_profile(self.root,self.pp_home_dir,self.pp_profile_dir,self.editor_issue,True)
+
+
     
 # **************
-# Profile
-# *************
-
-
-    """ opens a profile, displays the sections of showlist.json in sections pane
-        clicking on a section allows it to be edited.
-    """
+# PROFILES
+# **************
 
     def open_existing_profile(self):
         initial_dir=self.pp_home_dir+os.sep+"pp_profiles"
@@ -427,7 +439,6 @@ class PPEditor:
             self.mon.err(self,"Home directory not found: " + initial_dir + "\n\nHint: Data Home option must end in pp_home")
             return
         dir_path=tkFileDialog.askdirectory(initialdir=initial_dir)
-        #dir_path="C:\Users\Ken\Documents\Develop\Rpi\pp_home\pp_profiles/version_test"
         if len(dir_path)>0:
             self.open_profile(dir_path)
         
@@ -483,6 +494,10 @@ class PPEditor:
 
     def new_mediashow_profile(self):
         profile = self.pp_dir+"/pp_home/pp_profiles/ppt_mediashow"
+        self.new_profile(profile)
+        
+    def new_liveshow_profile(self):
+        profile = self.pp_dir+"/pp_home/pp_profiles/ppt_liveshow"
         self.new_profile(profile)
 
     def update_profile(self):
@@ -582,6 +597,9 @@ class PPEditor:
 
     def add_mediashow(self):
         self.add_show(self.new_shows['mediashow'])
+
+    def add_liveshow(self):
+        self.add_show(self.new_shows['liveshow'])
         
     def add_menu(self):
         self.add_show(self.new_shows['menu'])
@@ -812,10 +830,13 @@ class PPEditor:
                 
     def add_track_from_file(self):
         if self.current_medialist==None: return
+        # print "initial directory ", self.options.initial_media_dir
         files_path=tkFileDialog.askopenfilename(initialdir=self.options.initial_media_dir, multiple=True)
         # fix for tkinter bug
         files_path =  self.root.tk.splitlist(files_path)
         for file_path in files_path:
+            file_path=os.path.normpath(file_path)
+            # print "file path ", file_path
             self.add_track(file_path)
 
     def add_tracks_from_dir(self):
@@ -850,11 +871,15 @@ class PPEditor:
 
     def add_track(self,afile):
         relpath = os.path.relpath(afile,self.pp_home_dir)
+        # print "relative path ",relpath
         common = os.path.commonprefix([afile,self.pp_home_dir])
+        # print "common ",common
         if common.endswith("pp_home") == False:
             location = afile
         else:
             location = "+" + os.sep + relpath
+            location = string.replace(location,'\\','/')
+            # print "location ",location
         (root,title)=os.path.split(afile)
         (root,ext)= os.path.splitext(afile)
         if ext.lower() in PPEditor.IMAGE_FILES:
@@ -903,11 +928,7 @@ class Edit1Dialog(tkSimpleDialog.Dialog):
 
 class Options:
 
-# store associated with the object is the disc file. Variables used by the player
-# is just a cached interface.
-# options dialog class is a second class that reads and saves the options from the options file
-
-    def __init__(self):
+    def __init__(self,app_dir):
 
         # define options for Editor
         self.pp_home_dir =""   #home directory containing profile to be edited.
@@ -916,7 +937,7 @@ class Options:
 
 
     # create an options file if necessary
-        self.options_file = 'pp_editor.cfg'
+        self.options_file = app_dir+os.sep+'pp_editor.cfg'
         if not os.path.exists(self.options_file):
             self.create()
 
@@ -933,8 +954,14 @@ class Options:
     def create(self):
         config=ConfigParser.ConfigParser()
         config.add_section('config')
-        config.set('config','home','/home/pi/pp_home')
-        config.set('config','media','/home/pi')
+        if os.name=='nt':
+            config.set('config','home',os.path.expanduser('~')+'\pp_home')
+            config.set('config','media',os.path.expanduser('~'))
+        else:
+            config.set('config','home',os.path.expanduser('~')+'/pp_home')
+            config.set('config','media',os.path.expanduser('~'))            
+            # config.set('config','home','/home/pi/pp_home')
+            # config.set('config','media','/home/pi')
         with open(self.options_file, 'wb') as config_file:
             config.write(config_file)
 
@@ -1124,6 +1151,5 @@ class EditItemDialog(tkSimpleDialog.Dialog):
 
 
 if __name__ == "__main__":
-    datestring=" 20 Jan 2013"
     editor = PPEditor()
 

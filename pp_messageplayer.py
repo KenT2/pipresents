@@ -104,7 +104,7 @@ class MessagePlayer:
             self.canvas.after_cancel(self._tick_timer)
             self._tick_timer=None
         self.quit_signal=False
-        self.canvas.delete(ALL)
+        #self.canvas.delete(ALL)
         self.canvas.update_idletasks( )
         if self.kill_required_signal==True:
             self.end_callback("killed")
@@ -147,67 +147,3 @@ class MessagePlayer:
                     self._end()
             self._tick_timer=self.canvas.after(self.tick, self._do_dwell)
 
-
-# *****************
-#Test harness follows
-# *****************
-
-def on_end(message):
-        print ("end")
-        ip=ImagePlayer(canvas,cd,)
-        ip.play(track,enable_menu,on_end)
-
-def stop_image(event):
-    ip.stop()
-
-if __name__ == '__main__':
-  
-
-    # create and instance of a Tkinter top level window and refer to it as 'my_window'
-    my_window= Tkinter.Tk()
-    my_window.title("ImagePlayer Test Harness")
-    
-    # change the look of the window
-    my_window.configure(background='grey')
-
-    # get size of the screen and calculate canvas dimensions
-    screen_width = my_window.winfo_screenwidth()
-    screen_height = my_window.winfo_screenheight()
-
-    # allow 2 pixels for the taskbar
-    #self.window_width=self.screen_width-2 !!!!!!
-    window_width=screen_width-200
-    window_height=screen_height
-
-    canvas_height=window_height
-    canvas_width=window_width
-    
-    my_window.geometry("%dx%d+0+0" %(window_width,window_height))
-
-    my_window.bind("<Key>", stop_image)
-
-    #setup a canvas onto which will be drawn the images or text
-    canvas = Canvas(my_window, bg='black')
-    canvas.config(height=canvas_height, width=canvas_width)
-    canvas.grid(row=1,columnspan=2)
-    
-    # make sure focus is set on canvas.
-    canvas.focus_set()
-
-    cd={'hint-text' : 'Welcome to Pi Presents\nSecond line',
-            'hint-font' : 'Helvetica 30 bold',
-            'hint-colour' : 'white',
-            'duration':20}
-    
-    ip=MessagePlayer(canvas,cd,None)
-    
-    ip.play("",on_end)
-    my_window.mainloop()
-
-
-                                            
-
-
-
-
-   

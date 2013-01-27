@@ -17,10 +17,10 @@ def command_options():
     parser.add_argument( '-d','--debug', 
                                           action='store_true',
                                           help='Debug output to terminal window')
-    parser.add_argument( '-c','--code', nargs='?', default='', const='',
-                                          help='Path to pipresents directory')
     parser.add_argument( '-o','--home', nargs='?', default='', const='',
                                           help='Path to pp_home')
+    parser.add_argument( '-l','--liveshow', nargs='?', default='', const='',
+                                          help='Directory for live tracks')
     parser.add_argument( '-p','--profile', nargs='?', default='', const='',
                                           help='Profile')
     args=parser.parse_args()
@@ -33,7 +33,5 @@ def ed_options():
     parser.add_argument( '-d','--debug', 
                                           action='store_true',
                                           help='Debug output to terminal window')
-    parser.add_argument( '-c','--code', nargs='?', default='', const='',
-                                          help='Path to pipresents directory')
     args=parser.parse_args()
     return  vars(args)

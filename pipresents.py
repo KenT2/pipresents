@@ -20,11 +20,12 @@ import tkMessageBox
 from pp_options import command_options
 from pp_showlist import ShowList
 from pp_menushow import MenuShow
+from pp_liveshow import LiveShow
 from pp_mediashow import MediaShow
 from pp_utils import Monitor
 from pp_utils import StopWatch
 from pp_validate import Validator
-
+from pp_resourcereader import ResourceReader
 
 class PiPresents:
     def __init__(self):
@@ -39,16 +40,14 @@ class PiPresents:
 
         self.options=command_options()
         
-        # where am I?
-        if self.options['code']=="":
-            pp_dir="/home/pi/pipresents"
-        else:
-            pp_dir=self.options['code']
-            
+
+        pp_dir=sys.path[0]
+        
         if not os.path.exists(pp_dir+"/pipresents.py"):
             tkMessageBox.showwarning("Pi Presents","Bad Application Directory")
             exit()
-            
+
+        
         #Initialise logging
         Monitor.log_path=pp_dir
         self.mon=Monitor()
@@ -76,9 +75,9 @@ class PiPresents:
         
        #get directory containing pp_home from the command,
         if self.options['home'] =="":
-            home = "/home/pi/pp_home"
+            home = os.path.expanduser('~')+ os.sep+"pp_home"
         else:
-            home = self.options['home'] + "/pp_home"
+            home = self.options['home'] + os.sep+ "pp_home"
                    
         #check if pp_home exists.
         # try for 10 seconds to allow usb stick to automount
@@ -102,6 +101,11 @@ class PiPresents:
             if  val.validate_profile(None,self.pp_home,self.pp_profile,self.pipresents_issue,False) == False:
                 tkMessageBox.showwarning("Pi Presents","Validation Failed")
                 exit()
+                
+        # open the resources
+        self.rr=ResourceReader()
+        # read the file, done once for all the other classes to use.
+        self.rr.read(pp_dir,self.pp_home)
 
         
         #initialise the showlists and read the showlists
@@ -138,14 +142,17 @@ class PiPresents:
         # control display of window decorations
         if self.options['fullscreen']<>"partial":
             self.root = Tk(className="fspipresents")
+            os.system('unclutter &')
         else:
               self.root = Tk(className="pipresents")          
+
 
         self.title='Pi Presents - '+ self.pp_profile
         self.icon_text= 'Pi Presents'
         
         self.root.title(self.title)
         self.root.iconname(self.icon_text)
+        self.root.config(bg='black')
         
         # get size of the screen
         self.screen_width = self.root.winfo_screenwidth()
@@ -174,7 +181,7 @@ class PiPresents:
             self.window_height=self.screen_height-200
             self.window_x=50
             self.root.geometry("%dx%d%+d%+d" % (self.window_width,self.window_height,self.window_x,self.window_y))
-
+            
 
 
         
@@ -250,7 +257,16 @@ class PiPresents:
                                                     self.pp_home,
                                                     self.pp_profile)
             self.show.play(self._on_show_end,top=True)
-            self.root.mainloop( )     
+            self.root.mainloop( )
+
+        elif self.start_show['type']=="liveshow":
+            self.show= LiveShow(self.start_show,
+                                                    self.canvas,
+                                                    self.showlist,
+                                                    self.pp_home,
+                                                    self.pp_profile)
+            self.show.play(self._on_show_end,top=True)
+            self.root.mainloop( )                 
             
         else:
             self.mon.err(self,"unknown mediashow type in start show - "+ self.start_show['type'])
@@ -295,7 +311,13 @@ class PiPresents:
         self.tidy_up()
         exit()
 
-
+    def resource(self,section,item):
+        value=self.rr.get(section,item)
+        if value==False:
+            self.mon.err(self, "resource: "+section +': '+ item + " not found" )
+            self._stop("fatal error")
+        else:
+            return value
 
 # *********************
 # Key and button presses

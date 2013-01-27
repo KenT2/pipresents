@@ -1,0 +1,31 @@
+{
+ "issue": "1.1", 
+ "shows": [
+  {
+   "show-ref": "start", 
+   "start-show": "liveshow", 
+   "title": "Start", 
+   "type": "start"
+  }, 
+  {
+   "duration": "5", 
+   "has-child": "no", 
+   "hint-colour": "white", 
+   "hint-font": "Helvetica 30 bold", 
+   "hint-text": "Press Return", 
+   "hint-y": "100", 
+   "medialist": "liveshow.json", 
+   "omx-audio": "hdmi", 
+   "omx-other-options": "", 
+   "show-ref": "liveshow", 
+   "show-text": "", 
+   "show-text-colour": "", 
+   "show-text-font": "", 
+   "show-text-x": "0", 
+   "show-text-y": "0", 
+   "title": "Liveshow", 
+   "transition": "cut", 
+   "type": "liveshow"
+  }
+ ]
+}

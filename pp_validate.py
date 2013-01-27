@@ -116,7 +116,7 @@ class Validator:
                                 else:
                                     if track['sub-show'] not in v_show_labels: self.result.display('f',"show "+track['sub-show'] + " does not exist")
                                 
-                    if anonymous == 0 :self.result.display('f',"zero anonymous tracks in medialist " + file)
+                    if anonymous == 0 :self.result.display('w',"zero anonymous tracks in medialist " + file)
 
                     # check for duplicate track-labels
                     if v_track_labels.count('pp-menu-background') >1: self.result.display('f', "more than one pp-menu-background")
@@ -172,6 +172,15 @@ class Validator:
                             if not show['menu-spacing'].isdigit(): self.result.display('f',"'menu-spacing' is not 0 or a positive integer")
                             if not show['duration'].isdigit(): self.result.display('f',"'duration' is not 0 or a positive integer")                            
                             if not show['hint-y'].isdigit(): self.result.display('f',"'hint-y' is not 0 or a positive integer")
+
+
+                    if show['type']=="liveshow":
+                            if show['has-child']=='yes':
+                                if not show['hint-y'].isdigit(): self.result.display('f',"'hint-y' is not 0 or a positive integer")
+                            if show['show-text']<>"":
+                                if not show['show-text-x'].isdigit(): self.result.display('f',"'show-text-x' is not 0 or a positive integer")
+                                if not show['show-text-y'].isdigit(): self.result.display('f',"'show-text-y' is not 0 or a positive integer")
+  
                                 
                     if '.json' not in show['medialist']:
                         self.result.display('f', show['show-ref']+ " show has invalid medialist")
@@ -200,7 +209,7 @@ class Validator:
                         if track['track-ref'] in ('pp-menu-background','pp-child-show'):
                             v_track_labels.append(track['track-ref'])
                             
-                    if show['type']=='mediashow' and show['has-child']=='yes':
+                    if show['type']in('mediashow','liveshow') and show['has-child']=='yes':
                         if 'pp-child-show' not in v_track_labels: self.result.display('f'," pp-child-show track missing in medialist "+show['medialist'])
                     if show['type']=='menu' and show['has-background']=='yes':
                          if 'pp-menu-background' not in v_track_labels: self.result.display('f', " pp-menu-background track missing in medialist "+show['medialist'])

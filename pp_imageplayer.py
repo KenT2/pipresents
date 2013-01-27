@@ -4,10 +4,10 @@ import PIL.ImageEnhance
 
 from Tkinter import *
 import Tkinter
-
+import os
 import time
 
-from pp_utils import StopWatch
+from pp_resourcereader import ResourceReader
 from pp_utils import Monitor
 
 
@@ -28,18 +28,19 @@ class ImagePlayer:
     def __init__(self,canvas,cd,track_params):
         """
                 canvas - the canvas onto which the image is to be drawn
-                cd - configuration dictionary
+                cd -  dictionary of show parameters
+                track_params - disctionary of track paramters
         """
-        self.s = StopWatch()
-        self.s.off()
-        self.s.start()
-        
+
         self.mon=Monitor()
         self.mon.on()
 
         self.canvas=canvas
         self.cd=cd
         self.track_params=track_params
+
+        # open resources
+        self.rr=ResourceReader()
 
         # get config from medialist if there.
         if 'duration' in self.track_params and self.track_params['duration']<>"":
@@ -61,8 +62,6 @@ class ImagePlayer:
         self.centre_x = int(self.canvas['width'])/2
         self.centre_y = int(self.canvas['height'])/2
 
-        self.s.split('init')
-
 
     def play(self,
                     track,
@@ -73,7 +72,6 @@ class ImagePlayer:
                     playing_callback=None,
                     ending_callback=None):
                         
-        self.s.start()
         # instantiate arguments
         self.track=track
         self.enable_menu=enable_menu
@@ -89,14 +87,19 @@ class ImagePlayer:
         self.paused=False
         self.pause_text=None
 
-        self.pil_image=PIL.Image.open(self.track)
-        self.s.split("open gif file - sarename")
-        # adjust brightness and rotate (experimental)
-        # pil_image_enhancer=PIL.ImageEnhance.Brightness(pil_image)
-        # pil_image=pil_image_enhancer.enhance(0.1)
-        # pil_image=pil_image.rotate(45)
-        # tk_image = PIL.ImageTk.PhotoImage(pil_image)
-
+        if os.path.exists(self.track)==True:
+            self.pil_image=PIL.Image.open(self.track)
+            # adjust brightness and rotate (experimental)
+            # pil_image_enhancer=PIL.ImageEnhance.Brightness(pil_image)
+            # pil_image=pil_image_enhancer.enhance(0.1)
+            # pil_image=pil_image.rotate(45)
+            # tk_image = PIL.ImageTk.PhotoImage(pil_image)
+        else:
+            self.pil_image=None
+            # display 'Out of Order' for 7 seconds
+            self.dwell = (1000*7)- (2*self.porch)
+            if self.dwell<0: self.dwell=0
+            
         # and start image rendering
         self._start_front_porch()
 
@@ -141,7 +144,7 @@ class ImagePlayer:
             self.canvas.after_cancel(self._tick_timer)
             self._tick_timer=None
         self.quit_signal=False
-        self.canvas.delete(ALL)
+        # self.canvas.delete(ALL)
         self.canvas.update_idletasks( )
         self.state=self.NO_SLIDE
         if self.kill_required_signal==True:
@@ -152,35 +155,45 @@ class ImagePlayer:
             self=None
 
 
+    def resource(self,section,item):
+        value=self.rr.get(section,item)
+        if value==False:
+            self.mon.err(self, "resource: "+section +': '+ item + " not found" )
+            self._stop()
+        else:
+            return value
+
+
+
     def _start_front_porch(self):
         self.state=ImagePlayer.SLIDE_IN
         self.porch_counter=0
         if self.ready_callback<>None: self.ready_callback()
 
         if self.transition=="cut":
-            self.s.start()
             #just display the slide full brightness. No need for porch but used for symmetry
-            self.tk_img=PIL.ImageTk.PhotoImage(self.pil_image)
-            self.s.split("process PIL image to Tk image")
-            self.drawn = self.canvas.create_image(self.centre_x, self.centre_y,
-                                                  image=self.tk_img, anchor=CENTER)
-            self.s.stop("create image on the canvas")
-  
+            if self.pil_image<>None:
+                self.tk_img=PIL.ImageTk.PhotoImage(self.pil_image)
+                self.drawn = self.canvas.create_image(self.centre_x, self.centre_y,
+                                                      image=self.tk_img, anchor=CENTER)
 
+  
         elif self.transition=="fade":
             #experimental start black and increase brightness (controlled by porch_counter).
             self._display_image()
 
         elif self.transition == "slide":
             #experimental, start in middle and move to right (controlled by porch_counter)
-            self.tk_img=PIL.ImageTk.PhotoImage(self.pil_image)
-            self.drawn = self.canvas.create_image(self.centre_x, self.centre_y,
+            if self.pil_image<>None:
+                self.tk_img=PIL.ImageTk.PhotoImage(self.pil_image)
+                self.drawn = self.canvas.create_image(self.centre_x, self.centre_y,
                                                   image=self.tk_img, anchor=CENTER)
             
         elif self.transition=="crop":
             #experimental, start in middle and crop from right (controlled by porch_counter)
-            self.tk_img=PIL.ImageTk.PhotoImage(self.pil_image)
-            self.drawn = self.canvas.create_image(self.centre_x, self.centre_y,
+            if self.pil_image<>None:
+                self.tk_img=PIL.ImageTk.PhotoImage(self.pil_image)
+                self.drawn = self.canvas.create_image(self.centre_x, self.centre_y,
                                                   image=self.tk_img, anchor=CENTER)
 
         self._tick_timer=self.canvas.after(self.tick, self._do_front_porch)
@@ -216,13 +229,12 @@ class ImagePlayer:
             # one time flipping of pause text
             if self.paused==True and self.pause_text==None:
                 self.pause_text=self.canvas.create_text(100,100, anchor=NW,
-                                                      text="PAUSED.......",
+                                                      text=self.resource('imageplayer','m01'),
                                                       fill="white",
                                                       font="arial 25 bold")
                 self.canvas.update_idletasks( )
                 
             if self.paused==False and self.pause_text<>None:
-                    print "test to delete"
                     self.canvas.delete(self.pause_text)
                     self.pause_text=None
                     self.canvas.update_idletasks( )
@@ -240,20 +252,23 @@ class ImagePlayer:
              # just keep displaying the slide full brightness.
             # No need for porch but used for symmetry
              pass
+            
         elif self.transition=="fade":
             #experimental start full and decrease brightness (controlled by porch_counter).
             self._display_image()
 
         elif self.transition== "slide":
             #experimental, start in middle and move to right (controlled by porch_counter)
-            self.tk_img=PIL.ImageTk.PhotoImage(self.pil_image)
-            self.drawn = self.canvas.create_image(self.centre_x, self.centre_y,
+            if self.pil_image<>None:
+                self.tk_img=PIL.ImageTk.PhotoImage(self.pil_image)
+                self.drawn = self.canvas.create_image(self.centre_x, self.centre_y,
                                                   image=self.tk_img, anchor=CENTER)
             
         elif self.transition =="crop":
             #experimental, start in middle and crop from right (controlled by porch_counter)
-            self.tk_img=PIL.ImageTk.PhotoImage(self.pil_image)
-            self.drawn = self.canvas.create_image(self.centre_x, self.centre_y,
+            if self.pil_image<>None:
+                self.tk_img=PIL.ImageTk.PhotoImage(self.pil_image)
+                self.drawn = self.canvas.create_image(self.centre_x, self.centre_y,
                                                   image=self.tk_img, anchor=CENTER)
 
         self._tick_timer=self.canvas.after(self.tick, self._do_back_porch)
@@ -264,7 +279,6 @@ class ImagePlayer:
             self._end()
         else:
             self.porch_counter=self.porch_counter-1
-            # print "doing slide front porch " +str(self.porch_counter)
             self._display_image()
             if self.porch_counter==0:
                 self._end()
@@ -281,30 +295,36 @@ class ImagePlayer:
         
         # all the methods below have incorrect code !!!
         elif self.transition=="fade":
-            self.s.start()
-            self.enh=PIL.ImageEnhance.Brightness(self.pil_image)
-            prop=float(self.porch_counter)/float(20)  #????????
-            # print"proportion" + str(prop)
-            self.pil_img=self.enh.enhance(prop)
-            self.s.split("calculate fade")
-            self.tk_img=PIL.ImageTk.PhotoImage(self.pil_img)
-            self.s.split("convert PIL to Tk") 
-            self.drawn = self.canvas.create_image(self.centre_x, self.centre_y,
-                                                  image=self.tk_img, anchor=CENTER)
-            self.s.split("render")
-            self.s.stop("do nothing")
+            if self.pil_image<>None:
+                self.enh=PIL.ImageEnhance.Brightness(self.pil_image)
+                prop=float(self.porch_counter)/float(20)  #????????
+                self.pil_img=self.enh.enhance(prop)
+                self.tk_img=PIL.ImageTk.PhotoImage(self.pil_img)
+                self.drawn = self.canvas.create_image(self.centre_x, self.centre_y,
+                                                      image=self.tk_img, anchor=CENTER)
 
         elif self.transition=="slide":
-            self.canvas.move(self.drawn,5,0)
+            if self.pil_image<>None:
+                self.canvas.move(self.drawn,5,0)
             
         elif self.transition=="crop":
-            self.crop= 10*self.porch_counter
-            self.pil_img=self.pil_image.crop((0,0,1000-self.crop,1080))
-            self.tk_img=PIL.ImageTk.PhotoImage(self.pil_img)           
-            self.drawn = self.canvas.create_image(self.centre_x, self.centre_y,
-                                                  image=self.tk_img, anchor=CENTER)
-            
+            if self.pil_image<>None:
+                self.crop= 10*self.porch_counter
+                self.pil_img=self.pil_image.crop((0,0,1000-self.crop,1080))
+                self.tk_img=PIL.ImageTk.PhotoImage(self.pil_img)           
+                self.drawn = self.canvas.create_image(self.centre_x, self.centre_y,
+                                                      image=self.tk_img, anchor=CENTER)
+
+        # display message if image is not available
+                
+        if self.pil_image== None:
+            self.canvas.create_text(self.centre_x, self.centre_y,
+                                                  text=self.resource('imageplayer','m02'),
+                                                  fill='white',
+                                                font='arial 30 bold')
+
         # display instructions if enabled
+       
         if self.enable_menu== True:
             self.canvas.create_text(self.centre_x, int(self.canvas['height']) - int(self.cd['hint-y']),
                                                   text=self.cd['hint-text'],
@@ -329,77 +349,3 @@ class ImagePlayer:
             
         self.canvas.update_idletasks( )
 
-# *****************
-#Test harness follows
-# *****************
-
-def on_end(message):
-        print ("end")
-        ip=ImagePlayer(canvas,cd,)
-        ip.play(track,enable_menu,on_end)
-
-def stop_image(event):
-    ip.stop()
-
-if __name__ == '__main__':
-  
-    s=StopWatch()
-
-    s.on()
-    s.start()
-    
-        # create and instance of a Tkinter top level window and refer to it as 'my_window'
-    my_window= Tkinter.Tk()
-    my_window.title("ImagePlayer Test Harness")
-    
-    # change the look of the window
-    my_window.configure(background='grey')
-
-    # get size of the screen and calculate canvas dimensions
-    screen_width = my_window.winfo_screenwidth()
-    screen_height = my_window.winfo_screenheight()
-
-    # allow 2 pixels for the taskbar
-    #self.window_width=self.screen_width-2 !!!!!!
-    window_width=screen_width-200
-    window_height=screen_height
-
-    canvas_height=window_height
-    canvas_width=window_width
-    
-    my_window.geometry("%dx%d+0+0" %(window_width,window_height))
-
-    my_window.bind("<Key>", stop_image)
-
-    #setup a canvas onto which will be drawn the images or text
-    canvas = Canvas(my_window, bg='black')
-    canvas.config(height=canvas_height, width=canvas_width)
-    canvas.grid(row=1,columnspan=2)
-    
-    # make sure focus is set on canvas.
-    canvas.focus_set()
-
-    s.split("create windows")
-
-    cd={'hint-text' : 'the cat sat',
-            'hint-font' : 'Helvetica 30 bold',
-            'hint-colour' : 'white',
-            'transition' : 'cut',
-            'hint-y' : 100,
-            'duration':10}
-    
-    ip=ImagePlayer(canvas,cd,)
-    
-    enable_menu=True
-    track="/home/pi/pipresents/images/islands.jpg"
-
-    ip.play(track,enable_menu,on_end)
-    my_window.mainloop()
-
-
-                                            
-
-
-
-
-   

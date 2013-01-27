@@ -1,3 +1,11 @@
+Version 1.1.1 - 28/1/2013
+Added a LiveShow capability, tracks can be dynamically uploaded using ftp while a show is running.
+Editor now works on a PC.
+Added resources.cfg that allows the administrative text that was displayed to customers to be modified.
+Removed the -c command line argument as Pi Presents automatically detects where its code is.
+Removed mouse pointer in fullscreen mode, requires unclutter to be installed (Thanks Azizar)
+Added .wav and .ogg to audio files as they can be played by omxplayer.
+
 
 Version 1.1.0 - 20/1/2013
 Added validation of profiles - all fields except for fonts and colours are validated.

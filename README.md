@@ -1,9 +1,9 @@
-PI PRESENTS  - Version 1.1.0
+PI PRESENTS  - Version 1.1.1  !!!!!!!! TESTING !!!!!!!!
 ============================
 
-Pi Presents is a presentation application intended for Museums and Visitor Centres. I am involved with a couple of charity organisations that are museums or have visitor centres and have wanted a cheap way to provide audio interpretation and slide/videoshow displays. Until the Raspberry Pi arrived buying or constructing even sound players was expensive. The Pi with its combination of Linux, GPIO and a powerful GPU is ideal for black box multi-media applications; all it needs is a program to harness its power in a way that could be used by non-programmers.
+Pi Presents is a presentation application intended for Museums and Visitor Centres. I am involved with a couple of charity organisations that are museums or have visitor centres and have wanted a cost effective way to provide audio interpretation and slide/videoshow displays. Until the Raspberry Pi arrived buying or constructing even sound players was expensive. The Pi with its combination of Linux, GPIO and a powerful GPU is ideal for black box multi-media applications; all it needs is a program to harness its power in a way that could be used by non-programmers.
 
-This initial issue of Pi Presents offers some basic features but under the bonnet it is, I hope, a flexible modular application with simple to use editing facilities to configure it to your exact display requirements. The initial features include:
+This early issue of Pi Presents offers some basic features but under the bonnet it is, I hope, a flexible modular application with simple to use editing facilities to configure it to your exact display requirements. The current features include:
 
 *	Animation or interpretation of exhibits by triggering a sound, video, or slideshow from a PIR or button.
 
@@ -12,6 +12,8 @@ This initial issue of Pi Presents offers some basic features but under the bonne
 *	Allow media shows to be interrupted by the visitor and a menu of videos to be presented.
 
 *	Showing 'Powerpoint' like presentations where progress is controlled by buttons or keyboard. The presentation may include images, text, audio tracks and videos.
+
+*   A dynamic show capability (Liveshow) in which tracks to be played can be included and deleted while the show is running.
 
 I have immediate plans to develop an audio player based on pulseaudio which should replace omxplayer for audio tracks and allow use of the 3.5mm jack without popping. Also the ability to asynchronously trigger a number of tracks from GPIO pins. Other ideas are animation of exhibits using GPIO outputs, synthetic speech, and display of animations using OpenGLES.
 
@@ -34,6 +36,7 @@ Install required applications (PIL and X Server utils)
          sudo apt-get install python-imaging
          sudo apt-get install python-imaging-tk
          sudo apt-get install x11-xserver-utils
+		 sudo apt-get install unclutter
 
 	   
 Download and install pexpect
@@ -108,7 +111,7 @@ Rename the new directory to pipresents.
 
 Copy pp_editor.cfg from the old to new directories.
 
-The profiles in pipresents-examples will be kept compatible with the latest version of Pi Presents. Beware, re-installing these might overwrite profiles you have made. The example profiles can be updated to be compatible with the updated version of Pi Presents by running them through the editor.
+The profiles in pipresents-examples will be kept compatible with the latest version of Pi Presents. Beware, re-installing these will overwrite profiles you have made. The example profiles can be updated to be compatible with the updated version of Pi Presents by running them through the editor.
 
 		 
 Requirements
