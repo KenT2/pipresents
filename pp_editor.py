@@ -15,6 +15,7 @@ import json
 import copy
 import string
 
+
 from pp_medialist import MediaList
 from pp_showlist import ShowList
 from pp_utils import Monitor
@@ -169,11 +170,11 @@ class PPEditor:
                             'type':{'param':'type','shape':'entry','text':'Type','must':'no','read-only':'yes'}
                           }
         
-        # print " name and separator ", os.name, os.sep
+        #print " name and separator ", os.name, os.sep
         # print "os.getcwd() -  CWD ", os.getcwd()
-        # print "sys.path[0] -  location of code: code ",sys.path[0]
+        #print "sys.path[0] -  location of code: code ",sys.path[0]
         # print "os.getenv('HOME') -  user home dir ", os.getenv('HOME')
-        # print "os.path.expanduser('~') -  user home dir ", os.path.expanduser('~')
+        #print "os.path.expanduser('~') -  user home dir ", os.path.expanduser('~')
 
 # get command options
         self.command_options=ed_options()
@@ -742,7 +743,9 @@ class PPEditor:
             self.medialists_display.see(self.current_medialists_index)
 
     def save_medialist(self):
-        self.current_medialist.save_list(self.pp_profile_dir+ os.sep + self.medialists[self.current_medialists_index])
+        print type (self.medialists[self.current_medialists_index])
+        file = self.pp_profile_dir+ os.sep + self.medialists[self.current_medialists_index]
+        self.current_medialist.save_list(file)
 
           
 # ***************************************
@@ -856,30 +859,28 @@ class PPEditor:
             image_list=image_spec[1:]
             for ext in image_list:
                 exts.append(copy.deepcopy(ext))
-        #list of files in directory matching exts
-        files=[]
         for file in os.listdir(directory):
-            file = directory + os.sep + file
             (root_file,ext_file)= os.path.splitext(file)
             if ext_file.lower() in exts:
-                files.append(copy.deepcopy(file))
-        #now add to medialist from the files
-        for afile in files:
-            self.add_track(afile)
+                file_path=directory+os.sep+file
+                #print "file path before ", file_path
+                file_path=os.path.normpath(file_path)
+                #print "file path after ", file_path
+                self.add_track(file_path)
 
 
 
     def add_track(self,afile):
         relpath = os.path.relpath(afile,self.pp_home_dir)
-        # print "relative path ",relpath
+        #print "relative path ",relpath
         common = os.path.commonprefix([afile,self.pp_home_dir])
-        # print "common ",common
+        #print "common ",common
         if common.endswith("pp_home") == False:
             location = afile
         else:
             location = "+" + os.sep + relpath
             location = string.replace(location,'\\','/')
-            # print "location ",location
+            #print "location ",location
         (root,title)=os.path.split(afile)
         (root,ext)= os.path.splitext(afile)
         if ext.lower() in PPEditor.IMAGE_FILES:

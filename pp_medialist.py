@@ -3,6 +3,7 @@ import os
 import csv
 import json
 import copy
+import string
 
 # *************************************
 # MEDIALIST CLASS
@@ -231,6 +232,12 @@ class MediaList:
         """ save a medialist """
         if filename=="":
             return False
+        if os.name=='nt':
+            pass
+            # filename = string.replace(filename,'/','\\')
+        else:
+            filename = string.replace(filename,'\\','/')
+        print "save  medialist  ",filename
         dic={'issue':self.issue,'tracks':self._tracks}
         ofile  = open(filename, "wb")
         json.dump(dic,ofile,sort_keys=True,indent=1)

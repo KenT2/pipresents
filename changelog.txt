@@ -1,3 +1,7 @@
+version 1.1.1a - 28/1/2013
+Fixed bug in Track> Add Dir
+!!!! Editor does not reliably save medialists when used on a Windows PC !!!!!
+
 Version 1.1.1 - 28/1/2013
 Added a LiveShow capability, tracks can be dynamically uploaded using ftp while a show is running.
 Editor now works on a PC.

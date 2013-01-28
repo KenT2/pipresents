@@ -3,6 +3,7 @@ import os
 import csv
 import copy
 import json
+import string
 import ConfigParser
 from pp_utils import Monitor
 
@@ -144,6 +145,11 @@ class ShowList:
         """ save a showlist """
         if filename=="":
             return False
+        if os.name=='nt':
+            filename = string.replace(filename,'/','\\')
+        else:
+            filename = string.replace(filename,'\\','/')
+        print "save showlist ",filename
         dic={'issue':self.issue,'shows':self._shows}
         ofile  = open(filename, "wb")
         json.dump(dic,ofile,sort_keys=True,indent=1)

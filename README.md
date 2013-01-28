@@ -1,7 +1,7 @@
-PI PRESENTS  - Version 1.1.1
+PI PRESENTS  - Version 1.1.1a
 ============================
 
-If you are updating read the Release Notes first.
+Ensure you read the Release Notes first.
 
 Improviements from Version 1.1.0 are in changelog.txt
 

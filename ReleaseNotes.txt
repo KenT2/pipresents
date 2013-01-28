@@ -1,4 +1,6 @@
-Version 1.1.1
+Version 1.1.1a
+
+!!!!! The Editor is unreliable when used on a Windows PC!!!!!
 
 unclutter must be installed before using Pi Presents  (sudo apt-get install unclutter)
 
