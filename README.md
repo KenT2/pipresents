@@ -1,9 +1,9 @@
-PI PRESENTS  - Version 1.1.1a
+PI PRESENTS  - Version 1.1.1b
 ============================
 
 Ensure you read the Release Notes first.
 
-Improviements from Version 1.1.0 are in changelog.txt
+Improvements from Version 1.1.0 are in changelog.txt
 
 Pi Presents is a presentation application intended for Museums and Visitor Centres. I am involved with a couple of charity organisations that are museums or have visitor centres and have wanted a cost effective way to provide audio interpretation and slide/videoshow displays. Until the Raspberry Pi arrived buying or constructing even sound players was expensive. The Pi with its combination of Linux, GPIO and a powerful GPU is ideal for black box multi-media applications; all it needs is a program to harness its power in a way that could be used by non-programmers.
 

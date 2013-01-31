@@ -153,6 +153,7 @@ class ShowList:
         dic={'issue':self.issue,'shows':self._shows}
         ofile  = open(filename, "wb")
         json.dump(dic,ofile,sort_keys=True,indent=1)
+        ofile.close()
         return
             
 # =====================================================

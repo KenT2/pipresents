@@ -743,8 +743,11 @@ class PPEditor:
             self.medialists_display.see(self.current_medialists_index)
 
     def save_medialist(self):
-        print type (self.medialists[self.current_medialists_index])
-        file = self.pp_profile_dir+ os.sep + self.medialists[self.current_medialists_index]
+        basefile=self.medialists[self.current_medialists_index]
+        #print type(basefile)
+        # basefile=str(basefile)
+        #print type(basefile)
+        file = self.pp_profile_dir+ os.sep + basefile
         self.current_medialist.save_list(file)
 
           
@@ -801,27 +804,32 @@ class PPEditor:
             if values<>None:
                 self.current_medialist.update(self.current_medialist.length()-1,values)
             self.current_medialist.select(self.current_medialist.length()-1)
-            self.save_medialist()
             self.refresh_tracks_display()
 
 
     def new_message_track(self):
         self.new_track(self.new_tracks['message'],None)
+        self.save_medialist()
                        
     def new_video_track(self):
         self.new_track(self.new_tracks['video'],None)
+        self.save_medialist()
     
     def new_image_track(self):
         self.new_track(self.new_tracks['image'],None)
+        self.save_medialist()
     
     def new_show_track(self):
         self.new_track(self.new_tracks['show'],None)
+        self.save_medialist()
         
     def new_menu_background_track(self):
         self.new_track(self.new_tracks['menu-background'],None)
+        self.save_medialist()
 
     def new_child_show_track(self):
         self.new_track(self.new_tracks['child-show'],None)
+        self.save_medialist()
 
     def remove_track(self):
         if  self.current_medialist<>None and self.current_medialist.length()>0 and self.current_medialist.track_is_selected():
@@ -841,6 +849,7 @@ class PPEditor:
             file_path=os.path.normpath(file_path)
             # print "file path ", file_path
             self.add_track(file_path)
+        self.save_medialist()
 
     def add_tracks_from_dir(self):
         if self.current_medialist==None: return
@@ -867,7 +876,7 @@ class PPEditor:
                 file_path=os.path.normpath(file_path)
                 #print "file path after ", file_path
                 self.add_track(file_path)
-
+        self.save_medialist()
 
 
     def add_track(self,afile):

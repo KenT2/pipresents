@@ -4,6 +4,7 @@ import csv
 import json
 import copy
 import string
+from pp_utils import Monitor
 
 # *************************************
 # MEDIALIST CLASS
@@ -17,8 +18,9 @@ class MediaList:
 
     def __init__(self):
         self.clear()
- 
- 
+        self.mon=Monitor()
+        self.mon.on()
+        
  # Functions for the editor dealing with complete list
 
     def clear(self):
@@ -232,15 +234,21 @@ class MediaList:
         """ save a medialist """
         if filename=="":
             return False
-        if os.name=='nt':
-            pass
-            # filename = string.replace(filename,'/','\\')
-        else:
-            filename = string.replace(filename,'\\','/')
-        print "save  medialist  ",filename
         dic={'issue':self.issue,'tracks':self._tracks}
-        ofile  = open(filename, "wb")
-        json.dump(dic,ofile,sort_keys=True,indent=1)
+        filename=str(filename)
+        filename = string.replace(filename,'\\','/')
+        tries = 1
+        while tries<=10:
+            # print "save  medialist  ",filename
+            try:
+                ofile  = open(filename, "wb")
+                json.dump(dic,ofile,sort_keys=True,indent=1)
+                ofile.close()
+                self.mon.log(self,"Saved medialist "+ filename)
+                break
+            except IOError:
+                self.mon.err(self,"failed to save medialist, trying again " + str(tries))
+                tries+=1
         return
 
 
