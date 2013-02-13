@@ -117,7 +117,7 @@ class MessagePlayer:
             self.end_callback("error",message)
             self=None  
         elif self.kill_required_signal==True:
-            self.end_callback("killed",message))
+            self.end_callback("killed",message)
             self=None
         else:
             self.end_callback('normal',message)
