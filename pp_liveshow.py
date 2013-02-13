@@ -61,12 +61,13 @@ class LiveShow:
         self.shower=None
         self._end_liveshow_signal=False
         self._play_child_signal = False
+        self.error=False
         
         self._livelist=None
         self._new_livelist= None
 
 
-    def play(self,end_callback,ready_callback=None, top=False):
+    def play(self,end_callback,ready_callback=None, top=False,command='nil'):
 
         """ displays the liveshow
               end_callback - function to be called when the liveshow exits
@@ -87,23 +88,24 @@ class LiveShow:
             self._stop("Medialist file not found")
             
         self.options=command_options()
-        
-        if self.options['liveshow'] =="":
-            self._pp_live_dir = self.pp_home + os.sep + 'pp_live_tracks'
-            if not os.path.exists(self._pp_live_dir):
-                os.mkdir(self._pp_live_dir)
-        else:
-            self._pp_live_dir = self.options['liveshow']
-            if not os.path.exists(self._pp_live_dir):
-                self.mon.err(self,"live tracks directory not found in pp_home")
-                self._stop("live tracks directory " + self._pp_live_dir + "not found")
+               
+        self._pp_live_dir1 = self.pp_home + os.sep + 'pp_live_tracks'
+        if not os.path.exists(self._pp_live_dir1):
+            os.mkdir(self._pp_live_dir1)
+
+        self._pp_live_dir2=''   
+        if self.options['liveshow'] <>"":
+            self._pp_live_dir2 = self.options['liveshow']
+            if not os.path.exists(self._pp_live_dir2):
+                self.mon.err(self,"live tracks directory not found " + self._pp_live_dir2)
+                self._end('error',"live tracks directory not found")
 
         #create a medialist for the liveshow and read it.
         # it should be empty of anonymous tracks but read it to check its version.
         self.medialist=MediaList()
         if self.medialist.open_list(self.media_file,self.showlist.sissue())==False:
             self.mon.err(self,"Version of medialist different to Pi Presents")
-            self._end("fatal error")
+            self._end('error',"Version of medialist different to Pi Presents")
         
         if self.ready_callback<>None:
              self.ready_callback()
@@ -165,17 +167,17 @@ class LiveShow:
         elif button=='pause': self.key_pressed('p')
 
 
-
-    def kill(self):
+       
+    # kill or error
+    def terminate(self,reason):
         if self.shower<>None:
-            self.mon.log(self,"sent kill to shower")
-            self.shower.kill()
+            self.mon.log(self,"sent terminate to shower")
+            self.shower.terminate(reason)
         elif self.player<>None:
-            self.mon.log(self,"sent kill to player")
-            self.player.kill()
+            self.mon.log(self,"sent terminate to player")
+            self.player.terminate(reason)
         else:
-            self._end("killed")
-
+            self._end(reason,'terminated without terminating shower or player')
 
  
     def _tidy_up(self):
@@ -186,7 +188,7 @@ class LiveShow:
         value=self.rr.get(section,item)
         if value==False:
             self.mon.err(self, "resource: "+section +': '+ item + " not found" )
-            self._stop("fatal error")
+            self.terminate("error",'Cannot find resource')
         else:
             return value
         
@@ -209,29 +211,17 @@ class LiveShow:
 # end of show functions
 # ***************************
 
-    def _end(self,message):
+    def _end(self,reason,message):
         self._end_liveshow_signal=False
         self.mon.log(self,"Ending Liveshow: "+ self.show['show-ref'])
         self._tidy_up()
-        self._end_callback(message)
+        self._end_callback(reason,message)
         self=None
         return
         
     def _nend(self):
-        self._end_liveshow_signal=False
-        self.mon.log(self,"Ending Liveshow: "+ self.show['show-ref'])
-        self._tidy_up()
-        self._end_callback("end from state machine")
-        self=None
-        return
-
-    def _error(self,message):
-        self._end_liveshow_signal=False
-        self.mon.log(self,"Ending Liveshow: "+ self.show['show-ref'])
-        self._tidy_up()
-        self._end_callback(message)
-        self=None
-        return
+        self._end('normal','end from state machine')
+  
 
 # ***************************
 # Livelist
@@ -261,15 +251,23 @@ class LiveShow:
     def _new_livelist_create(self):
      
         self._new_livelist=[]
-        if os.path.exists(self._pp_live_dir):
-            for file in os.listdir(self._pp_live_dir):
-                file = self._pp_live_dir + os.sep + file
+        if os.path.exists(self._pp_live_dir1):
+            for file in os.listdir(self._pp_live_dir1):
+                file = self._pp_live_dir1 + os.sep + file
                 (root_file,ext_file)= os.path.splitext(file)
                 if ext_file.lower() in LiveShow.IMAGE_FILES+LiveShow.VIDEO_FILES+LiveShow.AUDIO_FILES:
                     self._livelist_add_track(file)
+                    
+        if os.path.exists(self._pp_live_dir2):
+            for file in os.listdir(self._pp_live_dir2):
+                file = self._pp_live_dir2 + os.sep + file
+                (root_file,ext_file)= os.path.splitext(file)
+                if ext_file.lower() in LiveShow.IMAGE_FILES+LiveShow.VIDEO_FILES+LiveShow.AUDIO_FILES:
+                    self._livelist_add_track(file)
+                    
         #print "\nbefore ", self._new_livelist
         self._new_livelist= sorted(self._new_livelist, key= lambda track: track['location'])
-        #print "\nafter ", self._new_livelist
+        print "\nafter ", self._new_livelist
 
         def get_base(self,track):
             print "base", track['location']
@@ -311,7 +309,7 @@ class LiveShow:
         # user wants to end 
         if self._end_liveshow_signal==True:
             self._end_liveshow_signal=False
-            self._end("show ended by user")
+            self._end('normal',"show ended by user")
         
         # play child?
         elif self._play_child_signal == True:
@@ -324,7 +322,7 @@ class LiveShow:
                 self._play_selected_track(child_track)
             else:
                 self.mon.err(self,"Child show not found in medialist: "+ self.show['pp-child-show'])
-                self._error("child show not found in medialist")
+                self._end('error',"child show not found in medialist")
                 
         # otherwise loop to next track                       
         else:
@@ -344,10 +342,10 @@ class LiveShow:
             self.player.play(content,self._display_message_end,None)
 
             
-    def  _display_message_end(self,message):
+    def  _display_message_end(self,reason,message):
         self.player=None
-        if message=="killed":
-            self._end(message)
+        if reason in ("killed",'error'):
+            self._end(reason,message)
         else:
             self._display_message_callback()
 
@@ -413,7 +411,7 @@ class LiveShow:
                                                                 self.showlist,
                                                                 self.pp_home,
                                                                 self.pp_profile)
-                self.shower.play(self.end_shower,top=False)
+                self.shower.play(self.end_shower,top=False,command='nil')
 
             
             elif selected_show['type']=="menu":
@@ -422,7 +420,7 @@ class LiveShow:
                                                         self.showlist,
                                                         self.pp_home,
                                                         self.pp_profile)
-                self.shower.play(self.end_shower,top=False)
+                self.shower.play(self.end_shower,top=False,command='nil')
                 
             else:
                 self.mon.err(self,"Unknown Show Type: "+ selected_show['type'])
@@ -437,19 +435,19 @@ class LiveShow:
         self._delete_eggtimer()
         
         
-    def end_player(self,message):
+    def end_player(self,reason,message):
         self.mon.log(self,"Returned from player with message: "+ message)
         self.player=None
-        if message in ("killed","fatal error"):
-            self._end(message)
+        if reason in("killed","error"):
+            self._end(reason,message)
         else:
             self._what_next()
 
-    def end_shower(self,message):
+    def end_shower(self,reason,message):
         self.mon.log(self,"Returned from shower with message: "+ message)
         self.shower=None
-        if message in ("killed","fatal error"):
-            self._end(message)
+        if reason in("killed","error"):
+            self._end(reason,message)
         else:
             self._what_next()  
         

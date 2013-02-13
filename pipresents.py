@@ -115,11 +115,11 @@ class PiPresents:
             self.showlist.open_json(self.showlist_file)
         else:
             self.mon.err(self,"showlist not found at "+self.showlist_file)
-            self.on_error()
+            self._end('error','showlist not found')
 
         if float(self.showlist.sissue())<>float(self.pipresents_issue):
             self.mon.err(self,"Version of profile " + self.showlist.sissue() + " is not  same as Pi Presents, must exit")
-            self.on_error()
+            self._end('error','wrong version of profile')
  
         # get the starter show from the showlist
         index = self.showlist.index_of_show('start')
@@ -128,7 +128,7 @@ class PiPresents:
             self.starter_show=self.showlist.selected_show()
         else:
             self.mon.err(self,"Show [start] not found in showlist")
-            self.on_error()
+            self._end('error','start show not found')
             
 # ********************
 # SET UP THE GUI
@@ -239,7 +239,7 @@ class PiPresents:
             self.start_show=self.showlist.selected_show()
         else:
             self.mon.err(self,"Show not found in showlist: "+ self.starter_show['start-show'])
-            self.on_error()
+            self._end('error','show not found in showlist')
             
         if self.start_show['type']=="mediashow":
             self.show= MediaShow(self.start_show,
@@ -247,7 +247,7 @@ class PiPresents:
                                                             self.showlist,
                                                             self.pp_home,
                                                             self.pp_profile)
-            self.show.play(self._on_show_end,top=True)
+            self.show.play(self._end_play_show,top=True,command='nil')
             self.root.mainloop( )     
             
         elif self.start_show['type']=="menu":
@@ -256,7 +256,7 @@ class PiPresents:
                                                     self.showlist,
                                                     self.pp_home,
                                                     self.pp_profile)
-            self.show.play(self._on_show_end,top=True)
+            self.show.play(self._end_play_show,top=True,command='nil')
             self.root.mainloop( )
 
         elif self.start_show['type']=="liveshow":
@@ -265,28 +265,48 @@ class PiPresents:
                                                     self.showlist,
                                                     self.pp_home,
                                                     self.pp_profile)
-            self.show.play(self._on_show_end,top=True)
+            self.show.play(self._end_play_show,top=True,command='nil')
             self.root.mainloop( )                 
             
         else:
             self.mon.err(self,"unknown mediashow type in start show - "+ self.start_show['type'])
-            self.on_error()
-    
+            self._end('error','unknown mediashow type')
+
+    def _end_play_show(self,reason,message):
+        self.mon.log(self,"Returned to piresents with reason: " + reason +" and message " + message)
+        self._end(reason,message)
      
-    def _on_show_end(self,message):
-        self.mon.log(self,"Show ended with message: " + message)
+    def _end(self,reason,message):
+        self.mon.log(self,"Pi Presents ending with message: " + message)
         self.show=None
-        if message=="killed":
+        if reason=='error':
+            self.mon.log(self, "exiting because of error")
+            self.tidy_up()
+            exit()            
+        if reason=='killed':
             self.mon.log(self,"kill received - exiting")
             self.on_kill_callback()
         else:
             # should never be here or fatal error
-            self.on_error()
+            self.mon.log(self, "exiting because invalid end reasosn")
+            self.tidy_up()
+            exit()
 
+             
 
 # *********************
 # EXIT APP
 # *********************
+
+    # kill or error
+    def terminate(self,reason):
+        if self.shower<>None:
+            self.mon.log(self,"sent terminate to shower")
+            self.shower.terminate(reason)
+        else:
+            self._end(reason,message)
+
+
 
     def tidy_up(self):
         #turn screen blanking back on
@@ -305,17 +325,12 @@ class PiPresents:
         else:
             exit()
 
- 
-    def on_error(self):
-        self.mon.log(self, "exiting because of error")
-        self.tidy_up()
-        exit()
 
     def resource(self,section,item):
         value=self.rr.get(section,item)
         if value==False:
             self.mon.err(self, "resource: "+section +': '+ item + " not found" )
-            self._stop("fatal error")
+            self.terminate("error")
         else:
             return value
 
@@ -358,7 +373,7 @@ class PiPresents:
         #terminate any running shows and players     
         if self.show<>None:
             self.mon.log(self,"kill sent to show")   
-            self.show.kill()
+            self.show.terminate('killed')
     
     def e_on_break_key(self,event):
         self.on_break_key()

@@ -13,7 +13,7 @@ from pp_utils import Monitor
  omxdriver hides the detail of using the omxplayer command  from videoplayer
  This is meant to be used with videoplayer.py
  Its easy to end up with many copies of omxplayer.bin running if this class is not used with care. use pp_videoplayer.py for a safer interface.
- I found overlapping prepare and show did nor completely reduce the gap between tracks, sometimes in a test of this one of my videos ran very fast when it was the second video 
+ I found overlapping prepare and show did nor completely reduce the gap between tracks. Sometimes, in a test of this, one of my videos ran very fast when it was the second video 
 
  External commands
  ----------------------------
@@ -22,7 +22,7 @@ from pp_utils import Monitor
  pause  - toggles pause
  control  - sends controls to omxplayer.bin  while track is playing (use stop and pause instead of q and p)
  stop - stops a video that is playing.
- kill - Sets kill required signal and stops a video playing. Used when aborting an application.
+ terminate - Stops a video playing. Used when aborting an application.
  
  Advanced:
  prepare  - processes the track up to where it is ready to display, at this time it pauses.
@@ -77,9 +77,13 @@ class OMXDriver(object):
         self._process.send('q')
 
     # kill the subprocess (omxplayer.bin). Used for tidy up on exit.
-    def kill(self):
-        self.kill_required_signal=True
+    def terminate(self,reason):
+        self.terminate_reason=reason
         self._process.send('q')
+        
+    def terminate_reason(self):
+        return self.terminate_reason
+    
         
         
         #try:
@@ -106,8 +110,7 @@ class OMXDriver(object):
         self.paused=False
         self.start_play_signal = False
         self.end_play_signal=False
-        self.kill_required_signal=False
-        self.killed=False
+        self.terminate_reason=''
         track= "'"+ track.replace("'","'\\''") + "'"
         cmd = OMXDriver._LAUNCH_CMD + options +" " + track
         self.mon.log(self, "Send command to omxplayer: "+ cmd)
@@ -149,106 +152,3 @@ class OMXDriver(object):
                 self.audio_position = 0.0             
             sleep(0.05)
 
-# ***********************************
-# TEST HARNESS
-# ************************************
-
-class Test1:
-
-    def __init__(self):
-        self.omx = OMXDriver()
-    
-    def play(self):
-        self.omx.play(track,options)
-        while True:
-            if self.omx.start_play_signal==True:
-                 self.omx.start_play_signal=False
-                 print "starting Track 1"
-            if self.omx.end_play_signal==True:
-                 self.omx.end_play_signal=False
-                 print "Ending Track 1"
-                 break
-            sleep(0.1)
-            
-        self.omx.play(track,options)
-        while True:
-            if self.omx.start_play_signal==True:
-                 self.omx.start_play_signal=False
-                 print "starting Track 2"
-                 sleep(4)
-                 print str(self.omx.video_position)
-                 self.omx.pause()
-                 sleep(4)
-                 self.omx.resume()
-                 print str(self.omx.video_position)
-            if self.omx.end_play_signal==True:
-                 self.omx.end_play_signal=False
-                 print "Ending Track 2"
-                 self.omx.kill()
-                 exit()
-            sleep(0.1) 
-
-                
-class Test2:
-    def __init__(self):
-        self.omx1 = OMXDriver()
-        self.omx2 = OMXDriver()
-    
-    def play(self):
-        self.omx1.play(track,options)
-        print "command: start playing Track 1"
-        while True:
-            if self.omx1.start_play_signal==True:
-                 self.omx1.start_play_signal=False
-                 print "status: showing Track 1 started"
-                 self.omx2.prepare(track,options)
-                 print "command: start preparing Track 2"
-            if self.omx1.end_play_signal==True:
-                 self.omx1.end_play_signal=False
-                 print "status: Track 1 ended"
-                 self.omx2.show()
-                 print "command: start showing  Track 2"
-                 break
-            sleep(0.1)
-            
-        while True:
-            if self.omx2.start_play_signal==True:
-                 self.omx2.start_play_signal=False
-                 print "status: Track 2 showing"
-                 sleep(4)
-                 print str(self.omx2.video_position)
-                 self.omx2.pause()
-                 sleep(4)
-                 self.omx2.resume()
-                 print str(self.omx2.video_position)
-            if self.omx2.end_play_signal==True:
-                 self.omx2.end_play_signal=False
-                 print "status:  Track 2 Ended"
-                 self.omx1.kill()   #not really an appropriate place for Kill, just here to test.
-                 self.omx2.kill()
-                 exit()
-            sleep(0.1) 
-
-
-    
-if __name__ == '__main__':
-    track = "/home/pi/pipresents/media/xthresh.mp4"
-    options="-o hdmi"
-    
-    # test 1 plays the track twice with no overlap
-    #test=Test1()
-    #test.play()
-    
-    # test 2 overlaps the prepare of track 2 with the showing of track 1.
-    test=Test2()
-    test.play()
-
-
-
-
-
-                         
-    
-
-
-                     

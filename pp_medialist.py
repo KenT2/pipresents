@@ -162,6 +162,16 @@ class MediaList:
             index +=1
         return False
 
+    def finish(self):
+        # select first anymous track in the list
+        index=self._num_tracks-1
+        while index>=0:
+            if self._tracks[index] ['track-ref'] =="":
+                self.select(index)
+                return True
+            index -=1
+        return False
+
     def next(self):
         if self._selected_track_index== self._num_tracks-1:
             index=0
@@ -195,7 +205,7 @@ class MediaList:
         return False
     
     
-    # Lookup for labelled tracks
+# Lookup for labelled tracks
     
     
     def index_of_track(self,wanted_track):
@@ -205,6 +215,9 @@ class MediaList:
                 return index
             index +=1
         return -1
+
+
+# open and save
 
 
     def open_list(self,filename,showlist_issue):
@@ -270,21 +283,3 @@ class MediaList:
         else:
             return False
 
-
-# **************
-# Test Harness
-# *************
-
-if __name__ == '__main__':
-    # make form a directory of files
-    ml=MediaList()
-    ml.make_list_from_dir("/home/pi/pipresents/media")
-    #ml.print_list
-    ml.save_list("/home/pi/pipresents/temp/test_ml.json")
-    
-    # make from a csv file. Fields - location,title,type
-    ml=MediaList()
-    ml.open_csv("/home/pi/pipresents/pp_profiles/pp_profile/images.csv")
-    #ml.print_list
-    ml.save_list("/home/pi/pipresents/temp/test_mlccsv.json")
-    

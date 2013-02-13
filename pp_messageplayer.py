@@ -59,6 +59,7 @@ class MessagePlayer:
         #init state and signals
         self.quit_signal=False
         self.kill_required_signal=False
+        self.error=False
         self._tick_timer=None
         self.drawn=None
 
@@ -85,8 +86,11 @@ class MessagePlayer:
             return
 
 
-    def kill(self):
-        self.kill_required_signal=True
+    def terminate(self,reason):
+        if reason=='error':
+            self.error=True
+        else:
+            self.kill_required_signal=True
         self.quit_signal=True
 
     
@@ -94,23 +98,29 @@ class MessagePlayer:
 # internal functions
 # *******************
 
-
     def _stop(self):
+        self.quit_signal=True
+        
+    def _error(self):
+        self.error=True
         self.quit_signal=True
   
      #called when dwell has completed or quit signal is received
-    def _end(self):
+    def _end(self,reason,message):
         if self._tick_timer<>None:
             self.canvas.after_cancel(self._tick_timer)
             self._tick_timer=None
         self.quit_signal=False
         #self.canvas.delete(ALL)
         self.canvas.update_idletasks( )
-        if self.kill_required_signal==True:
-            self.end_callback("killed")
+        if self.error==True:
+            self.end_callback("error",message)
+            self=None  
+        elif self.kill_required_signal==True:
+            self.end_callback("killed",message))
             self=None
         else:
-            self.end_callback("MessagePlayer ended")
+            self.end_callback('normal',message)
             self=None
 
 
@@ -139,11 +149,11 @@ class MessagePlayer:
     def _do_dwell(self):
         if self.quit_signal == True:
             self.mon.log(self,"quit received")
-            self._end()
+            self._end('normal','user quit')
         else:
             if self.dwell<>0:
                 self.dwell_counter=self.dwell_counter+1
                 if self.dwell_counter==self.dwell/self.tick:
-                    self._end()
+                    self._end('normal','finished')
             self._tick_timer=self.canvas.after(self.tick, self._do_dwell)
 

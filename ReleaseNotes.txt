@@ -1,4 +1,4 @@
-Version 1.1.1b
+Version 1.1.2
 
 On a Windows PC the editor did not reliably save medialists. I have added a workaround which asks the user to re-try  the save it seems to always work on the second or third time.
 

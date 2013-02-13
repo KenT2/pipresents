@@ -60,10 +60,11 @@ class MenuShow:
         self.player=None
         self.shower=None
         self.menu_timeout_running=None
+        self.error=False
 
 
 
-    def play(self,end_callback,ready_callback=None,top=False):
+    def play(self,end_callback,ready_callback=None,top=False,command='nil'):
         """ displays the menu 
               end_callback - function to be called when the menu exits
               ready_callback - callback when menu is ready to display (not used)
@@ -74,19 +75,20 @@ class MenuShow:
         self.end_callback=end_callback
         self.ready_callback=ready_callback
         self.top=top
+        self.command=command
 
         
         # check  data files are available.
         self.menu_file = self.pp_profile + "/" + self.show['medialist']
         if not os.path.exists(self.menu_file):
             self.mon.err(self,"Medialist file not found: "+ self.menu_file)
-            self._end("Medialist file not found")
+            self._end('error',"Medialist file not found")
         
         #create a medialist for the menu and read it.
         self.medialist=MediaList()
         if self.medialist.open_list(self.menu_file,self.showlist.sissue()) == False:
             self.mon.err(self,"Version of medialist different to Pi Presents")
-            self._end("fatal error")
+            self._end('error',"Version of medialist different to Pi Presents")
            
         if self.show['has-background']=="yes":
             background_index=self.medialist.index_of_track ('pp-menu-background')
@@ -94,10 +96,10 @@ class MenuShow:
                 self.menu_img_file = self.complete_path(self.medialist.track(background_index))
                 if not os.path.exists(self.menu_img_file):
                     self.mon.err(self,"Menu background file not found: "+ self.menu_img_file)
-                    self._end("Menu background file not found")
+                    self._end('error',"Menu background file not found")
             else:
                 self.mon.err(self,"Menu background not found in medialist")
-                self._end("Menu background not found")
+                self._end('error',"Menu background not found")
 
         #start timeout alarm if required
         if int(self.show['timeout'])<>0:
@@ -142,7 +144,7 @@ class MenuShow:
             else:
                 # not at top so stop the show
                 if  self.top == False:
-                    self._end("exit from stop command")
+                    self._end('normal',"exit from stop command")
                 else:
                     pass
       
@@ -182,49 +184,59 @@ class MenuShow:
         elif button=='stop': self.key_pressed("escape")
         elif button=='pause': self.key_pressed('p')
 
-    def kill(self):
+        
+    # kill or error
+    def terminate(self,reason):
         if self.shower<>None:
-            self.mon.log(self,"sent kill to shower")
-            self.shower.kill()
+            self.mon.log(self,"sent terminate to shower")
+            self.shower.terminate(reason)
         elif self.player<>None:
-            self.mon.log(self,"sent kill to player")
-            self.player.kill()
+            self.mon.log(self,"sent terminate to player")
+            self.player.terminate(reason)
         else:
-            self._end("killed")
+            self._end(reason,'terminated without terminating shower or player')
 
-    def resource(self,section,item):
-        value=self.rr.get(section,item)
-        if value==False:
-            self.mon.err(self, "resource: "+section +': '+ item + " not found" )
-            self._stop("fatal error")
-        else:
-            return value
+
 
 # *********************
 # INTERNAL FUNCTIONS
 # ********************
 
 # *********************
+# language resources
+# *********************
+
+    def resource(self,section,item):
+        value=self.rr.get(section,item)
+        if value==False:
+            self.mon.err(self, "resource: "+section +': '+ item + " not found" )
+            # timers may be running so need terminate
+            self.terminate("error")
+        else:
+            return value
+
+
+# *********************
 # Sequencing
 # *********************
 
     def _timeout_menu(self):
-        self.canvas.delete(ALL)
-        self.canvas.update_idletasks( )
-        self.end_callback("exit menu from timeout")
-        self=None
+        self._end('normal','menu timeout')
         return
         
     
-    #stop menu from user command or error
-    def _end(self,message):
+    # finish the player for killing, error or normally
+    # this may be called directly sub/child shows or players are not running
+    # if they might be running then need to call terminate.
+    
+    def _end(self,reason,message):
         self.canvas.delete(ALL)
         self.canvas.update_idletasks( )
         self.mon.log(self,"Ending menushow: "+ self.show['show-ref'])  
         if self.menu_timeout_running<>None:
             self.canvas.after_cancel(self.menu_timeout_running)
             self.menu_timeout_running=None
-        self.end_callback(message)
+        self.end_callback(reason,message)
         self=None
         return
 
@@ -327,7 +339,7 @@ class MenuShow:
                                                                 self.showlist,
                                                                 self.pp_home,
                                                                 self.pp_profile)
-                self.shower.play(self._end_shower,top=False)
+                self.shower.play(self._end_shower,top=False,command='nil')
 
             elif selected_show['type']=="liveshow":    
                 self.shower= LiveShow(selected_show,
@@ -335,7 +347,7 @@ class MenuShow:
                                                                 self.showlist,
                                                                 self.pp_home,
                                                                 self.pp_profile)
-                self.shower.play(self.end_shower,top=False)
+                self.shower.play(self.end_shower,top=False,command='nil')
 
             elif selected_show['type']=="menu": 
                 self.shower= MenuShow(selected_show,
@@ -343,7 +355,7 @@ class MenuShow:
                                                         self.showlist,
                                                         self.pp_home,
                                                         self.pp_profile)
-                self.shower.play(self._end_shower,top=False)                                    
+                self.shower.play(self._end_shower,top=False,command='nil')                    
             else:
                 self.mon.err(self,"Unknown Show Type: "+ selected_show['type'])
                 self._end("Unknown show type")  
@@ -351,20 +363,22 @@ class MenuShow:
         else:
             self.mon.err(self,"Unknown Track Type: "+ track_type)
             self._end("Unknown track type")
-            
-    def _end_player(self,message):
+    
+    # callback from when player ends
+    def _end_player(self,reason,message):
         self.mon.log(self,"Returned from player with message: "+ message)
         self.player=None
-        if message in("killed","fatal error"):
-            self._end(message)
+        if reason in("killed","error"):
+            self._end(reason,message)
         self._display_eggtimer(self.resource('menushow','m02'))
         self._what_next(message)
 
-    def _end_shower(self,message):
+    # callback from when shower ends
+    def _end_shower(self,reason,message):
         self.mon.log(self,"Returned from shower with message: "+ message)
         self.shower=None
-        if message in ("killed","fatal error"):
-            self._end(message)
+        if message in ("killed","error"):
+            self._end(reason,message)
         self._display_eggtimer(self.resource('menushow','m03'))
         self._what_next(message)  
    
@@ -405,7 +419,7 @@ class MenuShow:
                                        fill=self.show['entry-colour'],
                                        font=self.show['entry-font'])
             self.menu_entry_id.append(id)
-            y+=int(self.show['menu-spacing'])
+            y=y + int(self.show['menu-spacing'])
             if self.medialist.at_end():
                 break
             self.menu_length+=1

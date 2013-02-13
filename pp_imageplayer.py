@@ -82,6 +82,7 @@ class ImagePlayer:
         self.state=ImagePlayer.NO_SLIDE
         self.quit_signal=False
         self.kill_required_signal=False
+        self.error=False
         self._tick_timer=None
         self.drawn=None
         self.paused=False
@@ -120,9 +121,13 @@ class ImagePlayer:
             self._stop()
             return
 
-    def kill(self):
-        self.kill_required_signal=True
-        self.quit_signal=True
+    def terminate(self,reason):
+        if reason=='error':
+            self.error=True
+            self.quit_signal=True
+        else:
+            self.kill_required_signal=True
+            self.quit_signal=True
 
     def pause(self):
         if not self.paused:
@@ -130,6 +135,7 @@ class ImagePlayer:
         else:
             self.paused=False
 
+    
         
 # *******************
 # internal functions
@@ -137,9 +143,13 @@ class ImagePlayer:
 
     def _stop(self):
         self.quit_signal=True
+        
+    def _error(self):
+        self.error=True
+        self.quit_signal=True
   
      #called when back porch has completed or quit signal is received
-    def _end(self):
+    def _end(self,reason,message):
         if self._tick_timer<>None:
             self.canvas.after_cancel(self._tick_timer)
             self._tick_timer=None
@@ -147,11 +157,14 @@ class ImagePlayer:
         # self.canvas.delete(ALL)
         self.canvas.update_idletasks( )
         self.state=self.NO_SLIDE
-        if self.kill_required_signal==True:
-            self.end_callback("killed")
+        if self.error==True:
+            self.end_callback("error",message)
+            self=None          
+        elif self.kill_required_signal==True:
+            self.end_callback("killed",message)
             self=None           
         else:
-            self.end_callback("ImagePlayer ended")
+            self.end_callback(reason,message)
             self=None
 
 
@@ -159,7 +172,7 @@ class ImagePlayer:
         value=self.rr.get(section,item)
         if value==False:
             self.mon.err(self, "resource: "+section +': '+ item + " not found" )
-            self._stop()
+            self._error()
         else:
             return value
 
@@ -201,7 +214,7 @@ class ImagePlayer:
             
     def _do_front_porch(self):
         if self.quit_signal == True:
-            self._end()
+            self._end('normal','user quit')
         else:
             self.porch_counter=self.porch_counter+1
             # print "doing slide front porch " +str(self.porch_counter)
@@ -221,7 +234,7 @@ class ImagePlayer:
     def _do_dwell(self):
         if self.quit_signal == True:
             self.mon.log(self,"quit received")
-            self._end()
+            self._end('normal','user quit')
         else:
             if self.paused == False:
                 self.dwell_counter=self.dwell_counter+1
@@ -276,12 +289,12 @@ class ImagePlayer:
             
     def _do_back_porch(self):
         if self.quit_signal == True:
-            self._end()
+            self._end('normal','user quit')
         else:
             self.porch_counter=self.porch_counter-1
             self._display_image()
             if self.porch_counter==0:
-                self._end()
+                self._end('normal','finished')
             else:
                 self._tick_timer=self.canvas.after(self.tick,self._do_back_porch)
 
