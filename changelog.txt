@@ -1,3 +1,6 @@
+version 1.1.2a - 19/2/2013
+Fixed sorting of files in liveshow
+
 version 1.1.2 - 12/2/2013
 Liveshow can now take its tracks from two directories
 Switched 'up' and 'down' cursor keys in mediashow to match other programs.

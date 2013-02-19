@@ -265,13 +265,13 @@ class LiveShow:
                 if ext_file.lower() in LiveShow.IMAGE_FILES+LiveShow.VIDEO_FILES+LiveShow.AUDIO_FILES:
                     self._livelist_add_track(file)
                     
-        #print "\nbefore ", self._new_livelist
-        self._new_livelist= sorted(self._new_livelist, key= lambda track: track['location'])
-        print "\nafter ", self._new_livelist
 
-        def get_base(self,track):
-            print "base", track['location']
-            return track['location']
+        self._new_livelist= sorted(self._new_livelist, key= lambda track: os.path.basename(track['location']).lower())
+#       for it in self._new_livelist:
+#          print it['location']
+#      print ''
+
+
     
     def _livelist_replace_if_changed(self):
         self._new_livelist_create()
