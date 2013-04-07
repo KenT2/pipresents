@@ -1143,7 +1143,7 @@ class EditItemDialog(tkSimpleDialog.Dialog):
             field_spec=self.field_specs[field]
             if field_spec['shape']<>'sep':
                 if field_spec['shape']=='text':
-                    self.tp[field_spec['param']]=self.fields[row].get(1.0,END)
+                    self.tp[field_spec['param']]=self.fields[row].get(1.0,END).rstrip('\n')
                 elif field_spec['shape']=='option-menu':
                     self.tp[field_spec['param']]=self.entries[entry_index].get()
                     entry_index+=1

@@ -1,3 +1,8 @@
+version 1.1.2b - 7/4/2013
+Fixed messages not being vertically centered in messageplayer
+Fixed duration of displayed messages increasing, as well as increasing CPU occupancy with time
+Possible  fix for playing of videos crashing once in every few hours
+
 version 1.1.2a - 19/2/2013
 Fixed sorting of files in liveshow
 

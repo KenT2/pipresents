@@ -130,7 +130,7 @@ class MessagePlayer:
             self.ready_callback()
         # display text
         self.canvas.create_text(self.centre_x, self.centre_y,
-                                                text=self.text,
+                                                text=self.text.rstrip('\n'),
                                                 fill=self.track_params['message-colour'],
                                                 font=self.track_params['message-font'])     
         
@@ -145,7 +145,7 @@ class MessagePlayer:
         self.canvas.update_idletasks( )
         self._tick_timer=self.canvas.after(self.tick, self._do_dwell)
 
-        
+
     def _do_dwell(self):
         if self.quit_signal == True:
             self.mon.log(self,"quit received")
@@ -155,5 +155,10 @@ class MessagePlayer:
                 self.dwell_counter=self.dwell_counter+1
                 if self.dwell_counter==self.dwell/self.tick:
                     self._end('normal','finished')
-            self._tick_timer=self.canvas.after(self.tick, self._do_dwell)
+                else:
+                    self._tick_timer=self.canvas.after(self.tick, self._do_dwell)
+            else:
+                    self._tick_timer=self.canvas.after(self.tick, self._do_dwell)
+        
+ 
 
