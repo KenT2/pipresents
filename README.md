@@ -1,6 +1,12 @@
 PI PRESENTS  - Version 1.1.2
 ============================
 
+<b>IMPORTANT:</b> 26/2/2015 - [pipresents] is now two years old. [pipresents-next] is now the stable version of Pi Presents. If you are starting to use Pi Presents use [pipresents-next].
+
+The [pipresents] github repository will not be deleted, but the code will not be fixed for changes to the supporting software. Consider upgrading to [pipresents-next] 
+
+--------------------------------------------------------------------------------------------------------------------------
+
 Ensure you read the Release Notes first.
 
 Improvements from Version 1.1.1 are in changelog.txt
